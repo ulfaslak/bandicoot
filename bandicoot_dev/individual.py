@@ -1,8 +1,8 @@
 from __future__ import division
 
 
-from bandicoot.helper.group import grouping
-from bandicoot.helper.tools import summary_stats, entropy, pairwise
+from bandicoot_dev.helper.group import grouping
+from bandicoot_dev.helper.tools import summary_stats, entropy, pairwise
 from collections import Counter
 
 import math

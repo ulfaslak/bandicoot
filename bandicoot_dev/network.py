@@ -4,7 +4,7 @@ from collections import Counter, defaultdict
 from itertools import groupby, combinations
 from functools import partial
 from datetime import datetime, timedelta
-from bandicoot.utils import all
+from bandicoot_dev.utils import all
 
 
 def _round_half_hour(record):

@@ -1,6 +1,6 @@
 import os
 
-import bandicoot as bc
+import bandicoot_dev as bc
 from collections import Counter
 
 

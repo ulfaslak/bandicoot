@@ -1,6 +1,6 @@
-import bandicoot as bc
-from bandicoot.helper.group import group_records
-from bandicoot.core import User, Record
+import bandicoot_dev as bc
+from bandicoot_dev.helper.group import group_records
+from bandicoot_dev.core import User, Record
 
 from bisect import bisect_right
 from functools import partial

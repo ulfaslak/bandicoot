@@ -4,11 +4,11 @@ Contains tools for processing files (reading and writing csv and json files).
 
 from __future__ import with_statement, division
 
-from bandicoot.helper.tools import OrderedDict
+from bandicoot_dev.helper.tools import OrderedDict
 
-from bandicoot.core import User, Record, Position
-from bandicoot.helper.tools import percent_records_missing_location, antennas_missing_locations, warning_str
-from bandicoot.utils import flatten
+from bandicoot_dev.core import User, Record, Position
+from bandicoot_dev.helper.tools import percent_records_missing_location, antennas_missing_locations, warning_str
+from bandicoot_dev.utils import flatten
 
 from datetime import datetime
 from json import dumps

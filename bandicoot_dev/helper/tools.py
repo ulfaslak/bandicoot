@@ -12,7 +12,7 @@ except ImportError:
 
 class CustomEncoder(json.JSONEncoder):
     def default(self, obj):
-        from bandicoot.core import User
+        from bandicoot_dev.core import User
         if isinstance(obj, User):
             return repr(obj)
 

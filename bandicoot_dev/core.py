@@ -2,9 +2,9 @@ from __future__ import division
 
 import datetime
 from collections import Counter
-from bandicoot.helper.tools import Colors
-from bandicoot.helper.group import _binning
-import bandicoot as bc
+from bandicoot_dev.helper.tools import Colors
+from bandicoot_dev.helper.group import _binning
+import bandicoot_dev as bc
 
 
 class Record(object):
@@ -244,7 +244,7 @@ class User(object):
 
         Examples
         --------
-        >>> import bandicoot as bc
+        >>> import bandicoot_dev as bc
         >>> user = bc.User()
         >>> user.records = bc.tests.generate_user.random_burst(5)
         >>> user.describe()

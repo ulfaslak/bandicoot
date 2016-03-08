@@ -1,6 +1,6 @@
-from bandicoot.helper.tools import OrderedDict, warning_str
-from bandicoot.helper.group import group_records, DATE_GROUPERS
-import bandicoot as bc
+from bandicoot_dev.helper.tools import OrderedDict, warning_str
+from bandicoot_dev.helper.group import group_records, DATE_GROUPERS
+import bandicoot_dev as bc
 
 from functools import partial
 

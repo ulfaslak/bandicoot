@@ -1,6 +1,6 @@
 from functools import partial
 import itertools
-from bandicoot.helper.tools import mean, std, SummaryStats, advanced_wrap, AutoVivification
+from bandicoot_dev.helper.tools import mean, std, SummaryStats, advanced_wrap, AutoVivification
 
 
 DATE_GROUPERS = {
