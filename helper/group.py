@@ -131,9 +131,12 @@ def statistics(data, summary='default', datatype=None):
 
     if datatype == 'summarystats':
         if summary is None:
-            return data.distribution
+            return [item.distribution if not item==None else [] for item in data]
         elif summary in ['default', 'extended']:
             return {key: getattr(data, key, None) for key in summary_keys[summary]}
+        elif summary == "special":
+            return [{'mean': item.mean, 'std': item.std} if not item==None else 
+                    {'mean': None, 'std': None} for item in data]
         else:
             raise ValueError("{} is not a valid summary type".format(summary))
 
@@ -150,6 +153,8 @@ def statistics(data, summary='default', datatype=None):
             return [item.distribution for item in data]
         elif summary in ['extended', 'default']:
             return _stats_dict(summary_keys[summary])
+        elif summary == "special":
+            return _stats_dict(summary_keys['default'])
         else:
             raise ValueError("{} is not a valid summary type".format(summary))
 

@@ -176,6 +176,36 @@ def _conversations(group, delta=datetime.timedelta(hours=1)):
         yield results
 
 
+def _conversations_concluded_with_text(group, delta=datetime.timedelta(hours=1)):
+    """
+    Group texts into conversations not taking into account phone calls. The function returns an iterator over 
+    records grouped by conversations.
+
+    See :ref:`Using bandicoot <conversations-label>` for a definition of conversations.
+
+    A conversation begins when one person sends a text-message to the other and ends when there is no activity
+    between them for an hour.
+    """
+    last_time = None
+    results = []
+    for g in group:
+
+        if last_time is None or g.datetime - last_time < delta:
+            if g.interaction == 'text':
+                results.append(g)
+
+        else:
+            if len(results) != 0:
+                yield results
+
+            results = [g]
+
+        last_time = g.datetime
+
+    if len(results) != 0:
+        yield results
+
+
 @grouping(interaction='callandtext')
 def response_rate_text(records):
     """
@@ -298,6 +328,37 @@ def percent_initiated_conversations(records):
         init, total = map(sum, zip(*all_couples))
 
     return float(init) / total if total != 0 else 0
+
+
+@grouping(interaction='text')
+def percent_concluded_conversations(records):
+    """
+    The percentage of conversations that have been concluded by the user.
+
+    Each text conversation is weighted as a single interaction.  
+
+    #See :ref:`Using bandicoot <conversations-label>` for a definition of conversations.
+    """
+    records = list(records)
+
+    interactions = defaultdict(list)
+    for r in records:
+        interactions[r.correspondent_id].append(r)
+
+    def _percent_concluded(grouped):
+        mapped = [(1 if conv[-1].direction == 'out' else 0, 1)
+                  for conv in _conversations_concluded_with_text(grouped)]
+        return mapped
+
+    all_couples = [sublist for i in interactions.values()
+                   for sublist in _percent_concluded(i)]
+
+    if len(all_couples) == 0:
+        conc, total = 0, 0
+    else:
+        conc, total = map(sum, zip(*all_couples))
+
+    return float(conc) / total if total != 0 else 0
 
 
 @grouping(interaction='callandtext')

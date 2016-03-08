@@ -39,7 +39,7 @@ def flatten(d, parent_key='', separator='__'):
     return OrderedDict(items)
 
 
-def all(user, groupby='week', summary='default', network=False, split_week=False, split_day=False, attributes=True, flatten=False):
+def all(user, groupby='week', summary='default', dist=False, network=False, split_week=False, split_day=False, attributes=True, flatten=False):
     """
     Returns a dictionary containing all bandicoot indicators for the user,
     as well as reporting variables.
@@ -96,8 +96,8 @@ def all(user, groupby='week', summary='default', network=False, split_week=False
     if groupby is not None:
         if len(set(DATE_GROUPERS[groupby](r.datetime) for r in user.records)) <= 1:
             print warning_str('Grouping by week, but all data is from the same week!')
-    scalar_type = 'distribution_scalar' if groupby == 'week' else 'scalar'
-    summary_type = 'distribution_summarystats' if groupby == 'week' else 'summarystats'
+    scalar_type = 'distribution_scalar' if not dist else 'scalar'
+    summary_type = 'distribution_summarystats' if not dist else 'summarystats'
 
     number_of_interactions_in = partial(bc.individual.number_of_interactions, direction='in')
     number_of_interactions_in.__name__ = 'number_of_interaction_in'
@@ -178,6 +178,7 @@ def all(user, groupby='week', summary='default', network=False, split_week=False
     ])
 
     for fun, datatype in functions:
+        print fun.__name__
         try:
             metric = fun(user, groupby=groupby, summary=summary, datatype=datatype, split_week=split_week, split_day=split_day)
         except ValueError:
