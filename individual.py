@@ -37,9 +37,9 @@ def number_of_contacts(records, direction=None, more=0):
     """
 
     if direction is None:
-        counter = Counter(r.correspondent_id for r in records)
+        counter = Counter(r.correspondent_id for r in records if r.call_duration != 0)
     else:
-        counter = Counter(r.correspondent_id for r in records if r.direction == direction)
+        counter = Counter(r.correspondent_id for r in records if r.call_duration != 0 if r.direction == direction)
 
     return sum(1 for d in counter.values() if d > more)
 
@@ -423,7 +423,7 @@ def percent_pareto_durations(records, percentage=0.8):
 
 
 @grouping
-def balance_of_contacts(records, weighted=True):
+def balance_of_contacts(records, weighted=True, thresh=2):
     """
     The balance of interactions per contact. For every contact,
     the balance is the number of outgoing interactions divided by the total
@@ -447,6 +447,10 @@ def balance_of_contacts(records, weighted=True):
         if r.direction == 'out':
             counter_out[r.correspondent_id] += 1
         counter[r.correspondent_id] += 1
+    
+    if records[0].interaction == 'text':
+        counter_out = dict((k,v) for k,v in counter_out.items() if v > thresh)
+        counter = dict((k,counter[k]) for k,v in counter_out.items() if v > thresh)
 
     if not weighted:
         balance = [float(counter_out[c]) / float(counter[c]) for c in counter]
