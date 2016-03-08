@@ -6,6 +6,7 @@ from bandicoot_dev.helper.tools import summary_stats, entropy, pairwise
 from collections import Counter
 
 import math
+import numpy as np
 import datetime
 from collections import defaultdict
 
@@ -131,9 +132,9 @@ def call_duration(records, direction=None):
     """
     
     if direction is None:
-        call_durations = [r.call_duration for r in records]
+        call_durations = [r.call_duration for r in records if r.call_duration != 0]
     else:
-        call_durations = [r.call_duration for r in records if r.direction == direction]
+        call_durations = [r.call_duration for r in records if r.call_duration != 0 and r.direction == direction]
 
     return summary_stats(call_durations)
 
@@ -257,7 +258,7 @@ def response_rate_text(records):
 @grouping(interaction='callandtext')
 def response_delay_text(records):
     """
-    The response delay of the user within a conversation (in seconds)
+    The response delay of the user within a conversations grouped by interactions (in seconds)
 
     The following sequence of messages defines conversations (``I`` for an
     incoming text, ``O`` for an outgoing text, ``-`` for a one minute
@@ -288,7 +289,7 @@ def response_delay_text(records):
               for a, b in pairwise(conv)
               if b.direction == 'out' and a.direction == 'in')
 
-        return ts
+        return [np.mean(list(ts))]
 
     delays = [r for i in interactions.values() for r in _response_delay(i)
               if r > 0]

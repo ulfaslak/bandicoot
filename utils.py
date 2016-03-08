@@ -95,7 +95,7 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spli
     # Warn the user if they are selecting weekly and there's only one week
     if groupby is not None:
         if len(set(DATE_GROUPERS[groupby](r.datetime) for r in user.records)) <= 1:
-            print warning_str('Grouping by week, but all data is from the same week!')
+            print warning_str('Grouping by {0}, but all data is from the same {0}!'.format(groupby))
     scalar_type = 'distribution_scalar' if not dist else 'scalar'
     summary_type = 'distribution_summarystats' if not dist else 'summarystats'
 
@@ -178,7 +178,6 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spli
     ])
 
     for fun, datatype in functions:
-        print fun.__name__
         try:
             metric = fun(user, groupby=groupby, summary=summary, datatype=datatype, split_week=split_week, split_day=split_day)
         except ValueError:
