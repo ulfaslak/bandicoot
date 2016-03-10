@@ -39,7 +39,7 @@ def flatten(d, parent_key='', separator='__'):
     return OrderedDict(items)
 
 
-def all(user, groupby='week', summary='default', dist=False, network=False, split_week=False, split_day=False, attributes=True, flatten=False):
+def all(user, groupby='week', summary='default', dist=False, network=False, spatial=False, split_week=False, split_day=False, attributes=True, flatten=False):
     """
     Returns a dictionary containing all bandicoot indicators for the user,
     as well as reporting variables.
@@ -99,17 +99,14 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spli
     scalar_type = 'distribution_scalar' if not dist else 'scalar'
     summary_type = 'distribution_summarystats' if not dist else 'summarystats'
 
-    number_of_interactions_in = partial(bc.individual.number_of_interactions, direction='in')
-    number_of_interactions_in.__name__ = 'number_of_interaction_in'
-    number_of_interactions_out = partial(bc.individual.number_of_interactions, direction='out')
-    number_of_interactions_out.__name__ = 'number_of_interaction_out'
-
-    functions = [
+    individual_functions = [
         (bc.individual.active_days, scalar_type),
         (bc.individual.number_of_contacts, scalar_type),
         (bc.individual.call_duration, summary_type),
         (bc.individual.percent_nocturnal, scalar_type),
         (bc.individual.percent_initiated_conversations, scalar_type),
+        (bc.individual.percent_concluded_conversations, scalar_type),
+        (bc.individual.percent_overlap_conversations, scalar_type),
         (bc.individual.percent_initiated_interactions, scalar_type),
         (bc.individual.response_delay_text, summary_type),
         (bc.individual.response_rate_text, scalar_type),
@@ -120,8 +117,10 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spli
         (bc.individual.percent_pareto_interactions, scalar_type),
         (bc.individual.percent_pareto_durations, scalar_type),
         (bc.individual.number_of_interactions, scalar_type),
-        (number_of_interactions_in, scalar_type),
-        (number_of_interactions_out, scalar_type),
+        (bc.individual.percent_interactions_out, scalar_type)
+    ]
+    
+    spatial_functions = [
         (bc.spatial.number_of_antennas, scalar_type),
         (bc.spatial.entropy_of_antennas, scalar_type),
         (bc.spatial.percent_at_home, scalar_type),
@@ -133,8 +132,8 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spli
     network_functions = [
         bc.network.clustering_coefficient_unweighted,
         bc.network.clustering_coefficient_weighted,
-        bc.network.assortativity_attributes,
-        bc.network.assortativity_indicators
+        bc.network.assortativity_attributes#,
+        #bc.network.assortativity_indicators
     ]
 
     groups = [[r for r in g] for g in group_records(user, groupby=groupby)]
@@ -176,13 +175,17 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spli
         ('name', user.name),
         ('reporting', reporting)
     ])
-
+    
+    if spatial:
+        functions = individual_functions + spatial_functions
+    else:
+        functions = individual_functions
+    
     for fun, datatype in functions:
         try:
             metric = fun(user, groupby=groupby, summary=summary, datatype=datatype, split_week=split_week, split_day=split_day)
         except ValueError:
             metric = fun(user, groupby=groupby, datatype=datatype, split_week=split_week, split_day=split_day)
-
         returned[fun.__name__] = metric
 
     if network and user.has_network:

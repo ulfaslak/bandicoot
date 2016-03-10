@@ -362,6 +362,43 @@ def percent_concluded_conversations(records):
     return float(conc) / total if total != 0 else 0
 
 
+@grouping(interaction='text')
+def percent_overlap_conversations(records):
+    """
+    The percent of conversation time that overlaps with other conversations.
+
+    The following illustrates the concept of overlap. '-' denotes active conversation,
+    '_' is idle time, and * underscores overlap. Each symbol is 1 minute.
+        
+        Conversation 1: ___-----______   # Overlap of two conversations. The total 
+        Conversation 2: ______--------   # conversation time 11 minutes and overlap
+        Conve. overlap:       **         # is 2 minutes: results in 2/11 overlap.
+
+    #See :ref:`Using bandicoot <conversations-label>` for a definition of conversations.
+    """
+    records = list(records)
+
+    interactions = defaultdict(list)
+    for r in records:
+        interactions[r.correspondent_id].append(r)
+
+    def _timespans(grouped):
+        to_ts = lambda dt: int(dt.strftime("%s"))
+        ts = [(to_ts(conv[0].datetime), to_ts(conv[-1].datetime))
+              for conv in _conversations(grouped)]
+        return ts
+
+    all_timestamps = [ts for i in interactions.values()
+                      for a,b in _timespans(i) 
+                      for ts in xrange(a,b)]
+    
+    set_timestamps = set(all_timestamps)
+    if len(all_timestamps) == 0:
+        return 0
+
+    return 1 - len(set_timestamps) / len(all_timestamps)
+
+
 @grouping(interaction='callandtext')
 def active_days(records):
     """
@@ -423,7 +460,7 @@ def percent_pareto_durations(records, percentage=0.8):
 
 
 @grouping
-def balance_of_contacts(records, weighted=True, thresh=2):
+def balance_of_contacts(records, weighted=True, thresh=1):
     """
     The balance of interactions per contact. For every contact,
     the balance is the number of outgoing interactions divided by the total
@@ -448,7 +485,7 @@ def balance_of_contacts(records, weighted=True, thresh=2):
             counter_out[r.correspondent_id] += 1
         counter[r.correspondent_id] += 1
     
-    if records[0].interaction == 'text':
+    if r.interaction == 'text':
         counter_out = dict((k,v) for k,v in counter_out.items() if v > thresh)
         counter = dict((k,counter[k]) for k,v in counter_out.items() if v > thresh)
 
@@ -475,3 +512,26 @@ def number_of_interactions(records, direction=None):
         return len([r for r in records])
     else:
         return len([r for r in records if r.direction == direction])
+
+
+@grouping()
+def percent_interactions_out(records):
+    """
+    The number of interactions.
+
+    Parameters
+    ----------
+    direction : str, optional
+        Filters the records by their direction: ``None`` for all records,
+        ``'in'`` for incoming, and ``'out'`` for outgoing.
+    """
+    counter_out = 0
+    counter = 0
+    
+    for r in records:
+        if r.direction == 'out':
+            counter_out += 1
+        counter += 1
+        
+    return counter_out / counter
+
