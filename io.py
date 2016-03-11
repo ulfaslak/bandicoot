@@ -149,8 +149,15 @@ def filter_record(records):
 
     """
 
+    def sort_records(records):
+        sorted_min_records = sorted(set(records), key=lambda r: r.datetime)
+        num_dup = len(records) - len(sorted_min_records)
+        if num_dup > 0 and warnings:
+            print warning_str("Warning: {0:d} duplicated record(s) were removed.".format(num_dup))
+        return sorted_min_records
+
     scheme = {
-        'interaction': lambda r: r.interaction in ['call', 'text', 'physical', ''],
+        'interaction': lambda r: r.interaction in ['call', 'text', 'physical', 'location', ''],
         'direction': lambda r: r.direction in ['in', 'out', ''],
         'correspondent_id': lambda r: r.correspondent_id is not None,
         'datetime': lambda r: isinstance(r.datetime, datetime),
@@ -183,16 +190,19 @@ def filter_record(records):
             else:
                 ignored['all'] += 1
 
-    return list(_filter(records)), ignored, bad_records
+    return sort_records(list(_filter(records))), ignored, bad_records
 
 
-def load(name, records, attributes=None, attributes_path=None, 
+def load(name, records=None, physical=None, screen=None, stop_locations=None
+         attributes=None, attributes_path=None, 
          describe=False, warnings=False):
     """
-    Creates a new user. This function is used by read_csv, read_orange,
-    and read_telenor. If you want to implement your own reader function, we advise you to use the load() function
+    Creates a new user. This function is used by read_csv. If you want to 
+    implement your own reader function, we advise you to use the load() 
+    function.
 
-    `load` will output warnings on the standard output if some records are missing a position.
+    `load` will output warnings on the standard output if some records are 
+    missing a position.
 
     Parameters
     ----------
@@ -202,6 +212,12 @@ def load(name, records, attributes=None, attributes_path=None,
         exporting metrics about multiple users.
 
     records: list
+        A list or a generator of Record objects.
+
+    physical: list
+        A list or a generator of Record objects.
+
+    stop_locations: list
         A list or a generator of Record objects.
 
     attributes : dict
@@ -233,29 +249,39 @@ def load(name, records, attributes=None, attributes_path=None,
     user.name = name
     user.attributes_path = attributes_path
 
-    user.records, ignored, bad_records = filter_record(records)
+    due_loading = []
+    
+    if records is not None:
+        user.records, ignored_records, bad_records = filter_record(records)
+        due_loading.append((ignored_records, 'records'))
+        user.ignored_records = dict(ignored_records)
 
-    if ignored['all'] != 0:
-        if warnings:
-            print warning_str("Warning: %d record(s) were removed due to missing or incomplete fields." % ignored['all'])
-        for k in ignored.keys():
-            if k != 'all' and ignored[k] != 0 and warnings:
-                print warning_str(" " * 9 + "%s: %i record(s) with incomplete values" % (k, ignored[k]))
+    if physical not is None:
+        user.physical, ignored_physical, bad_physical = filter_record(physical)
+        due_loading.append((ignored_physical, 'physical events'))
+        user.ignored_physical = dict(ignored_physical)
+    if screen not is None:
+        user.screen, ignored_screen, bad_screen = filter_record(screen)
+        due_loading.append((ignored_screen, 'screen events'))
+        user.ignored_screen = dict(ignored_screen)
+    if stop_locations not is None:
+        user.stop_locations, ignored_stop_locations, bad_stop_locations = filter_record(stop_locations)
+        due_loading.append((ignored_stop_locations, 'stop_locations'))
+        user.ignored_stop_locations = dict(ignored_stop_locations)
 
-    user.ignored_records = dict(ignored)
+    if len(due_loading) < 1 and warnings:
+        print warning_str("Warning: No data provided!")
+
+    for ignored, name in due_loading:
+        if ignored['all'] != 0:
+            if warnings:
+                print warning_str("Warning: %d %s(s) were removed due to missing or incomplete fields." % (ignored['all'],name))
+            for k in ignored.keys():
+                if k != 'all' and ignored[k] != 0 and warnings:
+                    print warning_str(" " * 9 + "%s: %i %s(s) with incomplete values" % (k, ignored[k], name))
 
     if attributes is not None:
         user.attributes = attributes
-
-    percent_missing = percent_records_missing_location(user)
-    if percent_missing > 0 and warnings:
-        print warning_str("Warning: {0:.2%} of the records are missing a location.".format(percent_missing))
-
-    sorted_min_records = sorted(set(user.records), key=lambda r: r.datetime)
-    num_dup = len(user.records) - len(sorted_min_records)
-    if num_dup > 0 and warnings:
-        print warning_str("Warning: {0:d} duplicated record(s) were removed.".format(num_dup))
-        user.records = sorted_min_records
 
     if describe is True:
         user.describe()
@@ -309,7 +335,10 @@ def _read_network(user, records_path, attributes_path, read_function, extension=
     return OrderedDict(sorted(connections.items(), key=lambda t: t[0]))
 
 
-def read_csv(user_id, records_path, attributes_path=None, network=False, describe=True, warnings=True, errors=False):
+def read_csv(user_id, records_path, 
+             physical_path=None, screen_path=None, stop_locations_path=None, 
+             attributes_path=None, network=False, describe=True, warnings=True,
+             errors=False):
     """
     Load user records from a CSV file.
 
@@ -320,7 +349,16 @@ def read_csv(user_id, records_path, attributes_path=None, network=False, describ
         ID of the user (filename)
 
     records_path : str
-        Path of the directory all the user files.
+        Path of the directory all the user record files.
+
+    physical_path : str
+        Path of the directory all the user physical files.
+
+    screen_path : str
+        Path of the directory all the user screen files.
+
+    stop_locations_path : str
+        Path of the directory all the user stop_locations files.
 
     attributes_path : str, optional
         Path of the directory containing attributes files (``key, value`` CSV file).
@@ -364,6 +402,39 @@ def read_csv(user_id, records_path, attributes_path=None, network=False, describ
         records = map(_parse_record, reader)
 
     # Optional
+    physical = None
+    if physical_path is not None:
+        user_physical = os.path.join(physical_path, user_id + '.csv')
+        try:
+            with open(user_physical, 'rb') as csv_file:
+                reader = csv.DictReader(csv_file)
+                physical = dict((d['key'], d['value']) for d in reader)
+        except IOError:
+            physical = None
+
+    # Optional
+    screen = None
+    if screen_path is not None:
+        user_screen = os.path.join(screen_path, user_id + '.csv')
+        try:
+            with open(user_screen, 'rb') as csv_file:
+                reader = csv.DictReader(csv_file)
+                screen = dict((d['key'], d['value']) for d in reader)
+        except IOError:
+            screen = None
+
+    # Optional
+    stop_locations = None
+    if stop_locations_path is not None:
+        user_stop_locations = os.path.join(stop_locations_path, user_id + '.csv')
+        try:
+            with open(user_stop_locations, 'rb') as csv_file:
+                reader = csv.DictReader(csv_file)
+                stop_locations = dict((d['key'], d['value']) for d in reader)
+        except IOError:
+            stop_locations = None
+
+    # Optional
     attributes = None
     if attributes_path is not None:
         user_attributes = os.path.join(attributes_path, user_id + '.csv')
@@ -374,12 +445,16 @@ def read_csv(user_id, records_path, attributes_path=None, network=False, describ
         except IOError:
             attributes = None
 
-    user, bad_records = load(user_id, records, attributes, 
-                             attributes_path=attributes_path, describe=False, warnings=warnings)
+    user, bad_records = load(user_id, records, 
+                             physical, screen, stop_locations, attributes, 
+                             attributes_path=attributes_path, describe=False, 
+                             warnings=warnings)
 
     # Loads the network
     if network is True:
-        user.network = _read_network(user, records_path, attributes_path, read_csv)
+        user.network_records = _read_network(user, records_path, attributes_path, read_csv)
+        if physical is not None:
+            user.network_physical = _read_network(user, physical_records, attributes_path, read_csv)
         user.recompute_missing_neighbors()
 
     if describe:
