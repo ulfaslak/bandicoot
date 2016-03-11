@@ -16,11 +16,11 @@ def _round_half_hour(record):
 
 
 def _count_interaction(user, interaction=None, direction='out'):
-    if interaction is 'call_duration':
+    if interaction is 'duration':
         d = defaultdict(int)
         for r in user.records:
             if r.direction == direction and r.interaction == 'call':
-                d[r.correspondent_id] += r.call_duration
+                d[r.correspondent_id] += r.duration
         return d
 
     if interaction is None:
@@ -34,7 +34,7 @@ def _count_interaction(user, interaction=None, direction='out'):
         filtered = [x.correspondent_id for x in user.records if x.interaction == interaction and x.direction == direction]
     else:
         raise ValueError("{} is not a correct value of interaction, only 'call'"
-                         ", 'text', and 'call_duration' are accepted".format(interaction))
+                         ", 'text', and 'duration' are accepted".format(interaction))
     return Counter(filtered)
 
 

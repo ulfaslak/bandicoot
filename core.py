@@ -21,20 +21,20 @@ class Record(object):
         A unique identifier for the corresponding contact
     datetime : datetime
         The exact date and time of the interaction
-    call_duration : int or None
+    duration : int or None
         Durations of the call in seconds. None if the record is a text message.
     position : Position
         The geographic position of the user at the time of the interaction.
     """
 
-    __slots__ = ['interaction', 'direction', 'correspondent_id', 'datetime', 'call_duration', 'position']
+    __slots__ = ['interaction', 'direction', 'correspondent_id', 'datetime', 'duration', 'position']
 
-    def __init__(self, interaction, direction, correspondent_id, datetime, call_duration, position):
+    def __init__(self, interaction, direction, correspondent_id, datetime, duration, position):
         self.interaction = interaction
         self.direction = direction
         self.correspondent_id = correspondent_id
         self.datetime = datetime
-        self.call_duration = call_duration
+        self.duration = duration
         self.position = position
 
     def __repr__(self):
@@ -54,7 +54,7 @@ class Record(object):
         """
         return self.interaction == other.interaction and \
             self.direction != other.direction and \
-            self.call_duration == other.call_duration and \
+            self.duration == other.duration and \
             abs((self.datetime - other.datetime).total_seconds()) < 30
 
     def all_matches(self, iterable):
@@ -222,12 +222,12 @@ class User(object):
         num_oon_calls = len([r for r in oon_records if r.interaction == 'call'])
         num_oon_texts = len([r for r in oon_records if r.interaction == 'text'])
         num_oon_neighbors = len(set(x.correspondent_id for x in oon_records))
-        oon_call_durations = sum([r.call_duration for r in oon_records if r.interaction == 'call'])
+        oon_call_durations = sum([r.duration for r in oon_records if r.interaction == 'call'])
 
         num_calls = len([r for r in self.records if r.interaction == 'call'])
         num_texts = len([r for r in self.records if r.interaction == 'text'])
         total_neighbors = len(set(x.correspondent_id for x in self.records))
-        total_call_durations = sum([r.call_duration for r in self.records if r.interaction == 'call'])
+        total_call_durations = sum([r.duration for r in self.records if r.interaction == 'call'])
 
         def _safe_div(a, b, default):
             return a / b if b != 0 else default

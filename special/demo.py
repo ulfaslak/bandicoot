@@ -25,12 +25,12 @@ def export_transitions(user, directory):
 
 def export_timeline(user, directory):
     with open(os.path.join(directory, 'timeseries.csv'), 'wb') as f:
-        f.write('time,type,call_duration\n')
+        f.write('time,type,duration\n')
         for r in user.records:
             time = r.datetime.strftime('%d-%m-%y %H:%M')
             interaction = ('inc_' if r.direction == 'in' else 'out_') + r.interaction
-            call_duration = r.call_duration or ''
-            f.write("{},{},{}\n".format(time, interaction, call_duration))
+            duration = r.duration or ''
+            f.write("{},{},{}\n".format(time, interaction, duration))
 
 
 def export_network(user, directory):

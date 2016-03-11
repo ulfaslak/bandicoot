@@ -39,7 +39,7 @@ class TestParsers(unittest.TestCase):
                                 direction='in',
                                 correspondent_id='770000001',
                                 datetime=datetime.datetime(2013, 12, 16, 5, 39, 30),
-                                call_duration=0,
+                                duration=0,
                                 position=Position('13084', None)))
 
         result = {'allweek': {'allday': None}}
@@ -52,7 +52,7 @@ class TestParsers(unittest.TestCase):
                                 direction='in',
                                 correspondent_id='770000001',
                                 datetime=datetime.datetime(2013, 12, 16, 5, 39, 30),
-                                call_duration=0,
+                                duration=0,
                                 position=Position('13084', None)))
 
         radius = bc.spatial.radius_of_gyration(user, groupby=None)['allweek']['allday']
@@ -65,7 +65,7 @@ class TestParsers(unittest.TestCase):
                                 direction='in',
                                 correspondent_id='770000001',
                                 datetime=datetime.datetime(2013, 12, 16, 5, 39, 30),
-                                call_duration=0,
+                                duration=0,
                                 position=Position()))
 
     def test_read_csv_attributes(self):

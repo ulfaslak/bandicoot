@@ -85,7 +85,7 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
             'direction': 0,
             'correspondent_id': 0,
             'datetime': 0,
-            'call_duration': 0
+            'duration': 0
         }
 
     with the total number of records ignored (key ``'all'``), as well as the
@@ -115,7 +115,7 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
         (bc.individual.interactions_per_contact, summary_type),
         (bc.individual.interevent_time, summary_type),
         (bc.individual.percent_pareto_interactions, scalar_type),
-        (bc.individual.percent_pareto_durations, scalar_type),
+        (bc.individual.percent_pareto_call_durations, scalar_type),
         (bc.individual.number_of_interactions, scalar_type),
         (bc.individual.percent_interactions_out, scalar_type)
     ]

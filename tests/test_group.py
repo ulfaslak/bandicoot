@@ -172,7 +172,7 @@ class MissingTests(unittest.TestCase):
             'direction': 2,
             'correspondent_id': 0,
             'datetime': 0,
-            'call_duration': 1,
+            'duration': 1,
         }
         self.assertDictEqual(self.user.ignored_records, result)
 

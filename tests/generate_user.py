@@ -28,10 +28,10 @@ def random_record(**kwargs):
          'interaction':  random.choice(['text', 'text', 'text', 'call', 'call']),
          'correspondent_id': "correspondent_{}".format(correspondent),
          'direction': random.choice(['in', 'in', 'out']),
-         'call_duration': random.randint(1, 1000),
+         'duration': random.randint(1, 1000),
          'position': Position(location=(random.uniform(-5, 5), random.uniform(-5, 5)))}
     if r['interaction'] == "text":
-        r['call_duration'] = None
+        r['duration'] = None
 
     r.update(kwargs)
     return Record(**r)
@@ -136,7 +136,7 @@ def write_new_user(filepath, n=1960):
     user = sample_user(n)
 
     schema = ['interaction', 'direction', 'correspondent_id',
-              'datetime', 'call_duration', 'antenna_id']
+              'datetime', 'duration', 'antenna_id']
     with open(filepath, "wb") as new_user:
         w = csv.writer(new_user)
         w.writerow(schema)
@@ -181,7 +181,7 @@ def random_records(n, antennas, number_of_users=150, ingoing=0.7, percent_text=0
             correspondent_id=hashlib.md5(
                 str(random.randint(1, number_of_users))).hexdigest(),
             datetime=str(current_date),
-            call_duration=random.randint(
+            duration=random.randint(
                 1, 1000) if interaction == "call" else '',
             position=random.choice(antennas)
         )

@@ -37,9 +37,9 @@ def number_of_contacts(records, direction=None, more=0):
     """
 
     if direction is None:
-        counter = Counter(r.correspondent_id for r in records if r.call_duration != 0)
+        counter = Counter(r.correspondent_id for r in records if r.duration != 0)
     else:
-        counter = Counter(r.correspondent_id for r in records if r.call_duration != 0 if r.direction == direction)
+        counter = Counter(r.correspondent_id for r in records if r.duration != 0 if r.direction == direction)
 
     return sum(1 for d in counter.values() if d > more)
 
@@ -132,9 +132,9 @@ def call_duration(records, direction=None):
     """
     
     if direction is None:
-        call_durations = [r.call_duration for r in records if r.call_duration != 0]
+        call_durations = [r.duration for r in records if r.duration != 0]
     else:
-        call_durations = [r.call_duration for r in records if r.call_duration != 0 and r.direction == direction]
+        call_durations = [r.duration for r in records if r.duration != 0 and r.direction == direction]
 
     return summary_stats(call_durations)
 
@@ -434,7 +434,7 @@ def percent_pareto_interactions(records, percentage=0.8):
 
 
 @grouping(interaction='call')
-def percent_pareto_durations(records, percentage=0.8):
+def percent_pareto_call_durations(records, percentage=0.8):
     """
     The percentage of user's contacts that account for 80% of its total time spend on the phone.
     Optionally takes a percentage argument as a decimal (e.g., .8 for 80%).  
@@ -447,7 +447,7 @@ def percent_pareto_durations(records, percentage=0.8):
     user_count = defaultdict(int)
     for r in records:
         if r.interaction == "call":
-            user_count[r.correspondent_id] += r.call_duration
+            user_count[r.correspondent_id] += r.duration
 
     target = int(math.ceil(sum(user_count.values()) * percentage))
     user_sort = sorted(user_count.keys(), key=lambda x: user_count[x])

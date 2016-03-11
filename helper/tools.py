@@ -123,11 +123,6 @@ def percent_records_missing_location(user, method=None):
     return float(missing_locations) / len(user.records)
 
 
-def antennas_missing_locations(user, Method=None):
-    unique_antennas = set([record.position.antenna for record in user.records if record.position.antenna is not None])
-    return sum([1 for antenna in unique_antennas if user.antennas.get(antenna) is None])
-
-
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
     a, b = itertools.tee(iterable)

@@ -213,7 +213,7 @@ def _punchcard_grouping(records, sections, split_interval):
 def _transform_to_time_spent(records, split_interval, sections):
     """
     Each call that crosses a boundary of the sections in the punchcard is split.
-    These new records contain the amount of time (in record.call_duration) spent
+    These new records contain the amount of time (in record.duration) spent
     talking in that specific section.
     """
 
@@ -222,8 +222,8 @@ def _transform_to_time_spent(records, split_interval, sections):
 
     # contrary to the rest of the binning process, this is done with second
     # precision
-    for r in filter(lambda rec: rec.interaction == 'call' and rec.call_duration > 0, records):
-        t_left = r.call_duration
+    for r in filter(lambda rec: rec.interaction == 'call' and rec.duration > 0, records):
+        t_left = r.duration
         t_to_next_section = _seconds_to_section_split(r, sections)
         t_spent_total = 0
 
