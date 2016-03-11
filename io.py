@@ -110,11 +110,24 @@ def _parse_record(data):
     def _map_duration(s):
         return int(s) if s != '' else None
 
+
+    def _map_position(data):
+        antenna = Position()
+        if 'antenna_id' in data:
+            antenna.antenna = data['antenna_id']
+            return antenna
+        elif 'place_id' in data:
+            raise NameError("Use field name 'antenna_id' in input files. 'place_id' is deprecated.")
+        if 'latitude' in data and 'longitude' in data:
+            antenna.position = float(data['latitude']), float(data['longitude'])
+        return antenna
+
     return Record(interaction=data['interaction'],
                   direction=data['direction'],
                   correspondent_id=data['correspondent_id'],
                   datetime=_tryto(lambda x: datetime.strptime(x, "%Y-%m-%d %H:%M:%S"), data['datetime']),
-                  duration=_tryto(_map_duration, data['duration'])
+                  duration=_tryto(_map_duration, data['duration']),
+                  position=_tryto(_map_position, data)
                   )
 
 
