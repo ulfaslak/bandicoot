@@ -49,7 +49,6 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
     =================================== =======================================================================
     Reporting variables                 Description
     =================================== =======================================================================
-    antennas_path                       path of the CSV file containing antennas locations
     attributes_path                     directory where attributes were loaded
     version                             bandicoot version
     groupby                             grouping method ('week' or None)
@@ -65,7 +64,6 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
     has_home                            whether or not a :meth:`home location <bandicoot.core.User.recompute_home>` has been found
     has_network                         whether or not correspondents where loaded
     percent_records_missing_location    percentage of records without location
-    antennas_missing_locations          number of antennas missing a location
     percent_outofnetwork_calls          percentage of calls, received or emitted, made with a correspondant not loaded in the network
     percent_outofnetwork_texts          percentage of texts with contacts not loaded in the network
     percent_outofnetwork_contacts       percentage of contacts not loaded in the network
@@ -121,11 +119,11 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
     ]
     
     spatial_functions = [
-        (bc.spatial.number_of_antennas, scalar_type),
-        (bc.spatial.entropy_of_antennas, scalar_type),
+        #(bc.spatial.number_of_antennas, scalar_type),
+        #(bc.spatial.entropy_of_antennas, scalar_type),
         (bc.spatial.percent_at_home, scalar_type),
         (bc.spatial.radius_of_gyration, scalar_type),
-        (bc.spatial.frequent_antennas, scalar_type),
+        #(bc.spatial.frequent_antennas, scalar_type),
         (bc.spatial.churn_rate, scalar_type)
     ]
 
@@ -139,7 +137,6 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
     groups = [[r for r in g] for g in group_records(user, groupby=groupby)]
 
     reporting = OrderedDict([
-        ('antennas_path', user.antennas_path),
         ('attributes_path', user.attributes_path),
         ('version', bc.__version__),
         ('groupby', groupby),
@@ -156,7 +153,6 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
         ('has_home', user.has_home),
         ('has_network', user.has_network),
         ('percent_records_missing_location', bc.helper.tools.percent_records_missing_location(user)),
-        ('antennas_missing_locations', bc.helper.tools.antennas_missing_locations(user)),
         ('percent_outofnetwork_calls', user.percent_outofnetwork_calls),
         ('percent_outofnetwork_texts', user.percent_outofnetwork_texts),
         ('percent_outofnetwork_contacts', user.percent_outofnetwork_contacts),

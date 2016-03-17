@@ -152,7 +152,7 @@ def filter_record(records):
     def sort_records(records):
         sorted_min_records = sorted(set(records), key=lambda r: r.datetime)
         num_dup = len(records) - len(sorted_min_records)
-        if num_dup > 0 and warnings:
+        if num_dup > 0:
             print warning_str("Warning: {0:d} duplicated record(s) were removed.".format(num_dup))
         return sorted_min_records
 
@@ -193,7 +193,7 @@ def filter_record(records):
     return sort_records(list(_filter(records))), ignored, bad_records
 
 
-def load(name, records=None, physical=None, screen=None, stop_locations=None
+def load(name, records=None, physical=None, screen=None, stop_locations=None,
          attributes=None, attributes_path=None, 
          describe=False, warnings=False):
     """
@@ -255,16 +255,15 @@ def load(name, records=None, physical=None, screen=None, stop_locations=None
         user.records, ignored_records, bad_records = filter_record(records)
         due_loading.append((ignored_records, 'records'))
         user.ignored_records = dict(ignored_records)
-
-    if physical not is None:
+    if physical is not None:
         user.physical, ignored_physical, bad_physical = filter_record(physical)
         due_loading.append((ignored_physical, 'physical events'))
         user.ignored_physical = dict(ignored_physical)
-    if screen not is None:
+    if screen is not None:
         user.screen, ignored_screen, bad_screen = filter_record(screen)
         due_loading.append((ignored_screen, 'screen events'))
         user.ignored_screen = dict(ignored_screen)
-    if stop_locations not is None:
+    if stop_locations is not None:
         user.stop_locations, ignored_stop_locations, bad_stop_locations = filter_record(stop_locations)
         due_loading.append((ignored_stop_locations, 'stop_locations'))
         user.ignored_stop_locations = dict(ignored_stop_locations)
@@ -335,10 +334,9 @@ def _read_network(user, records_path, attributes_path, read_function, extension=
     return OrderedDict(sorted(connections.items(), key=lambda t: t[0]))
 
 
-def read_csv(user_id, records_path, 
-             physical_path=None, screen_path=None, stop_locations_path=None, 
-             attributes_path=None, network=False, describe=True, warnings=True,
-             errors=False):
+def read_csv(user_id, records_path=None, physical_path=None, screen_path=None, 
+             stop_locations_path=None, attributes_path=None, network=False, 
+             describe=True, warnings=True, errors=False):
     """
     Load user records from a CSV file.
 
@@ -395,55 +393,24 @@ def read_csv(user_id, records_path,
       Other values such as ``"N/A"``, ``"None"``, ``"null"`` will be
       considered as a text.
     """
-
-    user_records = os.path.join(records_path, user_id + '.csv')
-    with open(user_records, 'rb') as csv_file:
-        reader = csv.DictReader(csv_file)
-        records = map(_parse_record, reader)
-
-    # Optional
-    physical = None
-    if physical_path is not None:
-        user_physical = os.path.join(physical_path, user_id + '.csv')
-        try:
-            with open(user_physical, 'rb') as csv_file:
-                reader = csv.DictReader(csv_file)
-                physical = dict((d['key'], d['value']) for d in reader)
-        except IOError:
-            physical = None
-
-    # Optional
-    screen = None
-    if screen_path is not None:
-        user_screen = os.path.join(screen_path, user_id + '.csv')
-        try:
-            with open(user_screen, 'rb') as csv_file:
-                reader = csv.DictReader(csv_file)
-                screen = dict((d['key'], d['value']) for d in reader)
-        except IOError:
-            screen = None
-
-    # Optional
-    stop_locations = None
-    if stop_locations_path is not None:
-        user_stop_locations = os.path.join(stop_locations_path, user_id + '.csv')
-        try:
-            with open(user_stop_locations, 'rb') as csv_file:
-                reader = csv.DictReader(csv_file)
-                stop_locations = dict((d['key'], d['value']) for d in reader)
-        except IOError:
-            stop_locations = None
-
-    # Optional
-    attributes = None
-    if attributes_path is not None:
-        user_attributes = os.path.join(attributes_path, user_id + '.csv')
-        try:
-            with open(user_attributes, 'rb') as csv_file:
-                reader = csv.DictReader(csv_file)
-                attributes = dict((d['key'], d['value']) for d in reader)
-        except IOError:
-            attributes = None
+    
+    def _reader(datatype_path, file_type=1):
+        if datatype_path is not None:
+            user_datatype = os.path.join(datatype_path, user_id + '.csv')
+            try:
+                with open(user_datatype, 'rb') as csv_file:
+                    reader = csv.DictReader(csv_file)
+                    return map(_parse_record, reader) if file_type == 1 else \
+                           dict((d['key'], d['value']) for d in reader)
+            except IOError:
+                pass
+        return None
+        
+    records = _reader(records_path, 1)
+    physical = _reader(physical_path, 1)
+    screen = _reader(screen_path, 1)
+    stop_locations = _reader(stop_locations_path, 1)
+    attributes = _reader(attributes_path, 2)
 
     user, bad_records = load(user_id, records, 
                              physical, screen, stop_locations, attributes, 
@@ -454,7 +421,7 @@ def read_csv(user_id, records_path,
     if network is True:
         user.network_records = _read_network(user, records_path, attributes_path, read_csv)
         if physical is not None:
-            user.network_physical = _read_network(user, physical_records, attributes_path, read_csv)
+            user.network_physical = _read_network(user, physical, attributes_path, read_csv)
         user.recompute_missing_neighbors()
 
     if describe:
