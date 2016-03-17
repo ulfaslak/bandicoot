@@ -333,7 +333,6 @@ def _read_network(user, records_path, attributes_path, read_function, extension=
     # Return the network dictionary sorted by key
     return OrderedDict(sorted(connections.items(), key=lambda t: t[0]))
 
-THIS IS NOT SUPPOSED TO BE HERE
 def read_csv(user_id, records_path=None, physical_path=None, screen_path=None, 
              stop_locations_path=None, attributes_path=None, network=False, 
              describe=True, warnings=True, errors=False):
