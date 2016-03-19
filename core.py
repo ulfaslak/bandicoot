@@ -170,7 +170,7 @@ class User(object):
         self.has_call = False
         self.has_text = False
 
-        for r in self._records:
+        for r in self._cellular_records:
             if r.interaction == 'text':
                 self.has_text = True
             elif r.interaction == 'call':
