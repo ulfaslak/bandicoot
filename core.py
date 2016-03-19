@@ -135,8 +135,8 @@ class User(object):
         self.stops_path = None
         self.attributes_path = None
 
-        self.start_time = None
-        self.end_time = None
+        self.start_time = {"cellular": None, "physical": None, "screen": None, "stop": None}
+        self.end_time = {"cellular": None, "physical": None, "screen": None, "stop": None}
         self.night_start = datetime.time(22)  # bandicoot orig. is 19!
         self.night_end = datetime.time(7)
         self.weekend = [6, 7]  # Saturday, Sunday by default
@@ -163,8 +163,8 @@ class User(object):
     def cellular_records(self, input):
         self._cellular_records = sorted(input, key=lambda r: r.datetime)
         if len(self._cellular_records) > 0:
-            self.start_time_cellular = self._cellular_records[0].datetime
-            self.end_time_cellular = self._cellular_records[-1].datetime
+            self.start_time['cellular'] = self._cellular_records[0].datetime
+            self.end_time['cellular'] = self._cellular_records[-1].datetime
 
         # Reset all the states
         self.has_call = False
@@ -184,8 +184,8 @@ class User(object):
     def physical_records(self, input):
         self._physical_records = sorted(input, key=lambda r: r.datetime)
         if len(self._physical_records) > 0:
-            self.start_time_physical = self._physical_records[0].datetime
-            self.end_time_physical = self._physical_records[-1].datetime
+            self.start_time['physical'] = self._physical_records[0].datetime
+            self.end_time['physical'] = self._physical_records[-1].datetime
 
     @property
     def screen_records(self):
@@ -195,8 +195,8 @@ class User(object):
     def screen_records(self, input):
         self._screen_records = sorted(input, key=lambda r: r.datetime)
         if len(self._screen_records) > 0:
-            self.start_time_screen = self._screen_records[0].datetime
-            self.end_time_screen = self._screen_records[-1].datetime
+            self.start_time['screen'] = self._screen_records[0].datetime
+            self.end_time['screen'] = self._screen_records[-1].datetime
 
     @property
     def stop_records(self):
@@ -206,8 +206,8 @@ class User(object):
     def stop_records(self, input):
         self._stop_records = sorted(input, key=lambda r: r.datetime)
         if len(self._stop_records) > 0:
-            self.start_time_stop = self._stop_records[0].datetime
-            self.end_time_stop = self._stop_records[-1].datetime
+            self.start_time['stop'] = self._stop_records[0].datetime
+            self.end_time['stop'] = self._stop_records[-1].datetime
 
         #self.recompute_home()
 
