@@ -131,8 +131,7 @@ def _parse_record(data):
 
 
 def filter_record(records, datatype):
-    """
-    Filter records and remove items with missing or inconsistent fields.
+    """Filter records and remove items with missing or inconsistent fields.
 
     Parameters
     ----------
@@ -146,9 +145,7 @@ def filter_record(records, datatype):
     records, ignored : (object list, dict)
         A tuple of filtered records, and a dictionary counting the missings
         fields.
-
     """
-
     def sort_records(records):
         sorted_min_records = sorted(set(records), key=lambda r: r.datetime)
         num_dup = len(records) - len(sorted_min_records)
@@ -163,8 +160,8 @@ def filter_record(records, datatype):
         'correspondent_id': lambda r: r.correspondent_id is not None,
         'datetime': lambda r: isinstance(r.datetime, datetime),
         'duration': lambda r: isinstance(r.duration, (int, float))
-            if datatype in ['stop_locations', 'screen'] or r.interaction == "call"
-            else True
+        if datatype in ['stop_locations', 'screen'] or r.interaction == "call"
+        else True
     }
 
     ignored = OrderedDict([
@@ -186,7 +183,7 @@ def filter_record(records, datatype):
                 if not test(r):
                     ignored[key] += 1
                     bad_records.append(r)
-                    valid = False  # Not breaking, we count all fields with errors
+                    valid = False  # Not breaking, count all fields with errors
 
             if valid is True:
                 yield r
@@ -243,7 +240,6 @@ def load(name, cellular=None, physical=None, screen=None, stop_locations=None,
 
     Will returns a new User object.
     """
-
     user = User()
     user.name = name
     user.attributes_path = attributes_path
@@ -400,7 +396,6 @@ def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
       Other values such as ``"N/A"``, ``"None"``, ``"null"`` will be
       considered as a text.
     """
-    
     def _reader(datatype_path, file_type=1):
         if datatype_path is not None:
             user_datatype = os.path.join(datatype_path, user_id + '.csv')
@@ -408,11 +403,11 @@ def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
                 with open(user_datatype, 'rb') as csv_file:
                     reader = csv.DictReader(csv_file)
                     return map(_parse_record, reader) if file_type == 1 else \
-                           dict((d['key'], d['value']) for d in reader)
+                        dict((d['key'], d['value']) for d in reader)
             except IOError:
                 pass
         return None
-        
+
     cellular = _reader(cellular_path, 1)
     physical = _reader(physical_path, 1)
     screen = _reader(screen_path, 1)
@@ -421,17 +416,19 @@ def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
 
     user, bad_records = load(
         user_id,
-        cellular, physical, screen, stop_locations, 
-        attributes, attributes_path=attributes_path, describe=False, 
+        cellular, physical, screen, stop_locations,
+        attributes, attributes_path=attributes_path, describe=False,
         warnings=warnings
     )
 
     # Loads the network
     if network is True:
         if cellular is not None:
-            user.network_cellular = _read_network(user, cellular_path, attributes_path, read_csv)
+            user.network_cellular = _read_network(
+                user, cellular_path, attributes_path, read_csv)
         if physical is not None:
-            user.network_physical = _read_network(user, physical_path, attributes_path, read_csv)
+            user.network_physical = _read_network(
+                user, physical_path, attributes_path, read_csv)
         user.recompute_missing_neighbors()
 
     if describe:

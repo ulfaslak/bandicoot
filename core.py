@@ -67,33 +67,33 @@ class Record(object):
 class Position(object):
     """
     Data structure storing a generic location. Can be instantiated with either an
-    antenna or a gps location. Printing out the position will show which was used
+    stop_location or a gps location. Printing out the position will show which was used
     to instantiate it.
     """
 
-    def __init__(self, antenna=None, location=None):
-        self.antenna = antenna
+    def __init__(self, stop_location=None, location=None):
+        self.stop_location = stop_location
         self.location = location
 
     def _get_location(self, user):
         if self.location:
             return self.location
-        elif self.antenna:
-            return user.antennas.get(self.antenna)
+        elif self.stop_location:
+            return user.stop_locations.get(self.stop_location)
         else:
             return None
 
     def type(self):
-        if self.antenna:
-            return 'antenna'
+        if self.stop_location:
+            return 'stop_location'
         else:
             return 'gps'
 
     def __repr__(self):
-        if self.antenna and self.location:
-            return "Position(antenna=%s, location=%s)" % (self.antenna, self.location)
-        if self.antenna:
-            return "Position(antenna=%s)" % self.antenna
+        if self.stop_location and self.location:
+            return "Position(stop_location=%s, location=%s)" % (self.stop_location, self.location)
+        if self.stop_location:
+            return "Position(stop_location=%s)" % self.stop_location
         if self.location:
             return "Position(location=(%s, %s))" % self.location
 
@@ -102,12 +102,12 @@ class Position(object):
     def __eq__(self, other):
         if not isinstance(other, Position):
             return False
-        if self.antenna and other.antenna:
-            return self.antenna == other.antenna
+        if self.stop_location and other.stop_location:
+            return self.stop_location == other.stop_location
         if self.location and other.location:
             return self.location == other.location
 
-        if not self.location and not self.antenna and not other.location and not other.antenna:
+        if not self.location and not self.stop_location and not other.location and not other.stop_location:
             return True
 
         return False
@@ -126,10 +126,10 @@ class User(object):
 
     def __init__(self):
         self._records = []
-        self._antennas = {}
+        self._stop_locations = {}
 
         self.name = None
-        self.antennas_path = None
+        self.stop_locations_path = None
         self.attributes_path = None
 
         self.start_time = None
@@ -141,7 +141,7 @@ class User(object):
         self.home = None
         self.has_text = False
         self.has_call = False
-        self.has_antennas = False
+        self.has_stop_locations = False
         self.attributes = {}
         self.ignored_records = None
 
@@ -153,21 +153,21 @@ class User(object):
         self.network = {}
 
     @property
-    def antennas(self):
+    def stop_locations(self):
         """
         The purpose of this is to hook into assignments to the
-        user's antenna dictionary, and update records' location
+        user's stop_location dictionary, and update records' location
         based on the new value.
         """
-        return self._antennas
+        return self._stop_locations
 
-    @antennas.setter
-    def antennas(self, input_):
-        self._antennas = input_
-        self.has_antennas = len(input_) > 0
+    @stop_locations.setter
+    def stop_locations(self, input_):
+        self._stop_locations = input_
+        self.has_stop_locations = len(input_) > 0
         for r in self._records:
-            if r.position.antenna in self._antennas:
-                r.position.location = self._antennas[r.position.antenna]
+            if r.position.stop_location in self._stop_locations:
+                r.position.location = self._stop_locations[r.position.stop_location]
             else:
                 r.position.location = None
 
@@ -191,7 +191,7 @@ class User(object):
         # Reset all the states
         self.has_call = False
         self.has_text = False
-        self.has_antennas = False
+        self.has_stop_locations = False
 
         for r in self._records:
             if r.interaction == 'text':
@@ -199,8 +199,8 @@ class User(object):
             elif r.interaction == 'call':
                 self.has_call = True
 
-            if r.position.type() == 'antenna':
-                self.has_antennas = True
+            if r.position.type() == 'stop_location':
+                self.has_stop_locations = True
 
         self.recompute_home()
 
@@ -284,10 +284,10 @@ class User(object):
         else:
             print empty_box + "No attribute stored"
 
-        if len(self.antennas) == 0:
-            print empty_box + "No antenna stored"
+        if len(self.stop_locations) == 0:
+            print empty_box + "No stop_location stored"
         else:
-            print filled_box + format_int("antennas", len(self.antennas))
+            print filled_box + format_int("stop_locations", len(self.stop_locations))
 
         if self.has_home:
             print filled_box + "Has home"
@@ -311,8 +311,8 @@ class User(object):
 
     def recompute_home(self):
         """
-        Return the antenna where the user spends most of his time at night.
-        None is returned if there are no candidates for a home antenna
+        Return the stop_location where the user spends most of his time at night.
+        None is returned if there are no candidates for a home stop_location
         """
 
         if self.night_start < self.night_end:
@@ -354,4 +354,4 @@ class User(object):
             self.home = Position(location=new_home)
 
         else:
-            self.home = Position(antenna=new_home)
+            self.home = Position(stop_location=new_home)
