@@ -92,7 +92,7 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
 
     # Warn the user if they are selecting weekly and there's only one week
     if groupby is not None:
-        record_types = [user.cellular, user.physical, user.screen, user.stops]
+        record_types = [user.cellular_records, user.physical_records, user.screen_records, user.stop_records]
         for records in record_types:
             if len(records) < 1:
                 continue
