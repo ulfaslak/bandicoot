@@ -419,17 +419,28 @@ def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
     stop_locations = _reader(stop_locations_path, 1)
     attributes = _reader(attributes_path, 2)
 
+<<<<<<< HEAD
     user, bad_records = load(
         user_id,
         cellular, physical, screen, stop_locations, 
         attributes, attributes_path=attributes_path, describe=False, 
         warnings=warnings
     )
+=======
+    user, bad_records = load(user_id, cellular, 
+                             physical, screen, stop_locations, attributes, 
+                             attributes_path=attributes_path, describe=False, 
+                             warnings=warnings)
+>>>>>>> d5fe533bb23133c3234392347c568faf3f229556
 
     # Loads the network
     if network is True:
         if cellular is not None:
+<<<<<<< HEAD
             user.network_cellular = _read_network(user, cellular_path, attributes_path, read_csv)
+=======
+            user.network_records = _read_network(user, cellular_path, attributes_path, read_csv)
+>>>>>>> d5fe533bb23133c3234392347c568faf3f229556
         if physical is not None:
             user.network_physical = _read_network(user, physical_path, attributes_path, read_csv)
         user.recompute_missing_neighbors()

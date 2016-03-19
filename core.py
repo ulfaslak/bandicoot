@@ -127,7 +127,6 @@ class User(object):
     def __init__(self):
         self._records = []
         self._antennas = {}
-        self._tmp = []
 
         self.name = None
         self.antennas_path = None

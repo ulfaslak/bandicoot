@@ -92,8 +92,12 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
 
     # Warn the user if they are selecting weekly and there's only one week
     if groupby is not None:
-        if len(set(DATE_GROUPERS[groupby](r.datetime) for r in user.records)) <= 1:
-            print warning_str('Grouping by {0}, but all data is from the same {0}!'.format(groupby))
+        record_types = [user.cellular, user.physical, user.screen, user.stop_locations]
+        for records in record_types:
+            if len(records) < 1:
+                continue
+            if len(set(DATE_GROUPERS[groupby](r.datetime) for r in records)) <= 1:
+                print warning_str('Grouping by {0}, but all data is from the same {0}!'.format(groupby))
     scalar_type = 'distribution_scalar' if not dist else 'scalar'
     summary_type = 'distribution_summarystats' if not dist else 'summarystats'
 
