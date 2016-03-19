@@ -339,7 +339,7 @@ def _read_network(user, records_path, attributes_path, read_function, extension=
     return OrderedDict(sorted(connections.items(), key=lambda t: t[0]))
 
 
-def read_csv(user_id, records_path=None, physical_path=None, screen_path=None,
+def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
              stop_locations_path=None, attributes_path=None, network=False,
              describe=True, warnings=True, errors=False):
     """
@@ -351,7 +351,7 @@ def read_csv(user_id, records_path=None, physical_path=None, screen_path=None,
     user_id : str
         ID of the user (filename)
 
-    records_path : str
+    cellular_path : str
         Path of the directory all the user record files.
 
     physical_path : str
@@ -384,11 +384,11 @@ def read_csv(user_id, records_path=None, physical_path=None, screen_path=None,
     Examples
     --------
 
-    >>> user = bandicoot.read_csv('recs', '.')
-    >>> print len(user.records)
+    >>> user = bandicoot.read_csv('cellular', '.')
+    >>> print len(user.cellular)
     10
 
-    >>> user = bandicoot.read_csv('recs', '.', None, 'sample_attributes.csv')
+    >>> user = bandicoot.read_csv('cellular', '.', None, 'attributes.csv')
     >>> print user.attributes['age']
     25
 
@@ -413,22 +413,25 @@ def read_csv(user_id, records_path=None, physical_path=None, screen_path=None,
                 pass
         return None
         
-    records = _reader(records_path, 1)
+    cellular = _reader(cellular_path, 1)
     physical = _reader(physical_path, 1)
     screen = _reader(screen_path, 1)
     stop_locations = _reader(stop_locations_path, 1)
     attributes = _reader(attributes_path, 2)
 
-    user, bad_records = load(user_id, records, 
-                             physical, screen, stop_locations, attributes, 
-                             attributes_path=attributes_path, describe=False, 
-                             warnings=warnings)
+    user, bad_records = load(
+        user_id,
+        cellular, physical, screen, stop_locations, 
+        attributes, attributes_path=attributes_path, describe=False, 
+        warnings=warnings
+    )
 
     # Loads the network
     if network is True:
-        user.network_records = _read_network(user, records_path, attributes_path, read_csv)
+        if cellular is not None:
+            user.network_cellular = _read_network(user, cellular_path, attributes_path, read_csv)
         if physical is not None:
-            user.network_physical = _read_network(user, physical, attributes_path, read_csv)
+            user.network_physical = _read_network(user, physical_path, attributes_path, read_csv)
         user.recompute_missing_neighbors()
 
     if describe:
