@@ -1,13 +1,11 @@
-"""
-Contains tools for processing files (reading and writing csv and json files).
-"""
+"""Tools for processing files (reading and writing csv and json files)."""
 
 from __future__ import with_statement, division
 
 from bandicoot_dev.helper.tools import OrderedDict
 
 from bandicoot_dev.core import User, Record, Position
-from bandicoot_dev.helper.tools import percent_records_missing_location, warning_str
+from bandicoot_dev.helper.tools import warning_str
 from bandicoot_dev.utils import flatten
 
 from datetime import datetime
@@ -32,7 +30,7 @@ def to_csv(objects, filename, digits=5):
 
     Examples
     --------
-    This function can be use to export the results of :meth`bandicoot.utils.all`.
+    Can be use to export the results of :meth`bandicoot.utils.all`.
     >>> U_1 = bc.User()
     >>> U_2 = bc.User()
     >>> bc.to_csv([bc.utils.all(U_1), bc.utils.all(U_2)], 'results_1_2.csv')
@@ -40,7 +38,6 @@ def to_csv(objects, filename, digits=5):
     If you only have one object, you can simply pass it as argument:
     >>> bc.to_csv(bc.utils.all(U_1), 'results_1.csv')
     """
-
     if not isinstance(objects, list):
         objects = [objects]
 
@@ -80,7 +77,7 @@ def to_json(objects, filename):
 
     Examples
     --------
-    This function can be use to export the results of :meth`bandicoot.utils.all`.
+    Can be use to export the results of :meth`bandicoot.utils.all`.
     >>> U_1 = bc.User()
     >>> U_2 = bc.User()
     >>> bc.to_json([bc.utils.all(U_1), bc.utils.all(U_2)], 'results_1_2.json')
@@ -88,7 +85,6 @@ def to_json(objects, filename):
     If you only have one object, you can simply pass it as argument:
     >>> bc.to_json(bc.utils.all(U_1), 'results_1.json')
     """
-
     if not isinstance(objects, list):
         objects = [objects]
 
@@ -110,14 +106,14 @@ def _parse_record(data):
     def _map_duration(s):
         return int(s) if s != '' else None
 
-
     def _map_position(data):
         antenna = Position()
         if 'antenna_id' in data:
             antenna.antenna = data['antenna_id']
             return antenna
         elif 'place_id' in data:
-            raise NameError("Use field name 'antenna_id' in input files. 'place_id' is deprecated.")
+            raise NameError("Use field name 'antenna_id' in input files. \
+                'place_id' is deprecated.")
         if 'latitude' in data and 'longitude' in data:
             antenna.position = float(data['latitude']), float(data['longitude'])
         return antenna
@@ -125,27 +121,31 @@ def _parse_record(data):
     return Record(interaction=data['interaction'],
                   direction=data['direction'],
                   correspondent_id=data['correspondent_id'],
-                  datetime=_tryto(lambda x: datetime.strptime(x, "%Y-%m-%d %H:%M:%S"), data['datetime']),
+                  datetime=_tryto(
+                    lambda x: datetime.strptime(x, "%Y-%m-%d %H:%M:%S"),
+                    data['datetime']
+                    ),
                   duration=_tryto(_map_duration, data['duration']),
                   position=_tryto(_map_position, data)
                   )
 
 
-def filter_record(records):
+def filter_record(records, datatype):
     """
-    Filter records and remove items with missing or inconsistent fields
+    Filter records and remove items with missing or inconsistent fields.
 
     Parameters
     ----------
 
     records : list
-        A list of Record objects
+        A list of Cellular/Screen/.. objects
 
     Returns
     -------
 
-    records, ignored : (Record list, dict)
-        A tuple of filtered records, and a dictionary counting the missings fields
+    records, ignored : (object list, dict)
+        A tuple of filtered records, and a dictionary counting the missings
+        fields.
 
     """
 
@@ -153,15 +153,18 @@ def filter_record(records):
         sorted_min_records = sorted(set(records), key=lambda r: r.datetime)
         num_dup = len(records) - len(sorted_min_records)
         if num_dup > 0:
-            print warning_str("Warning: {0:d} duplicated record(s) were removed.".format(num_dup))
+            print warning_str("Warning: {0:d} duplicated record(s) were \
+                removed.".format(num_dup))
         return sorted_min_records
 
     scheme = {
-        'interaction': lambda r: r.interaction in ['call', 'text', 'physical', 'location', ''],
+        'interaction': lambda r: r.interaction in ['call', 'text', 'physical', ''],
         'direction': lambda r: r.direction in ['in', 'out', ''],
         'correspondent_id': lambda r: r.correspondent_id is not None,
         'datetime': lambda r: isinstance(r.datetime, datetime),
-        'duration': lambda r: isinstance(r.duration, (int, float)) if r.interaction == 'call' else True,
+        'duration': lambda r: isinstance(r.duration, (int, float))
+            if datatype in ['stop_locations', 'screen'] or r.interaction == "call"
+            else True
     }
 
     ignored = OrderedDict([
@@ -193,15 +196,14 @@ def filter_record(records):
     return sort_records(list(_filter(records))), ignored, bad_records
 
 
-def load(name, records=None, physical=None, screen=None, stop_locations=None,
-         attributes=None, attributes_path=None, 
-         describe=False, warnings=False):
+def load(name, cellular=None, physical=None, screen=None, stop_locations=None,
+         attributes=None, attributes_path=None, describe=False, warnings=False):
     """
-    Creates a new user. This function is used by read_csv. If you want to 
-    implement your own reader function, we advise you to use the load() 
+    Create a new user. This function is used by read_csv. If you want to
+    implement your own reader function, we advise you to use the load()
     function.
 
-    `load` will output warnings on the standard output if some records are 
+    `load` will output warnings on the standard output if some records are
     missing a position.
 
     Parameters
@@ -211,7 +213,7 @@ def load(name, records=None, physical=None, screen=None, stop_locations=None,
         The name of the user. It is stored in User.name and is useful when
         exporting metrics about multiple users.
 
-    records: list
+    cellular: list
         A list or a generator of Record objects.
 
     physical: list
@@ -231,18 +233,15 @@ def load(name, records=None, physical=None, screen=None, stop_locations=None,
         If warnings is equal to False, the function will not output the
         warnings on the standard output.
 
-
     For instance:
 
     .. code-block:: python
 
-       >>> records = [Record(...),...]
+       >>> cellular = [Cellular(...),...]
        >>> attributes = {'age': 60}
-       >>> load("Frodo", records, attributes)
+       >>> load("Frodo", cellular, attributes)
 
-    will returns a new User object.
-
-
+    Will returns a new User object.
     """
 
     user = User()
@@ -250,22 +249,27 @@ def load(name, records=None, physical=None, screen=None, stop_locations=None,
     user.attributes_path = attributes_path
 
     due_loading = []
-    
-    if records is not None:
-        user.records, ignored_records, bad_records = filter_record(records)
-        due_loading.append((ignored_records, 'records'))
-        user.ignored_records = dict(ignored_records)
+    bad_records = [None] * 4
+
+    if cellular is not None:
+        user.cellular, ignored_cellular, bad_cellular = filter_record(cellular, "cellular")
+        due_loading.append((ignored_cellular, 'cellular records'))
+        bad_records[0] = bad_cellular
+        user.ignored_cellular = dict(ignored_cellular)
     if physical is not None:
-        user.physical, ignored_physical, bad_physical = filter_record(physical)
-        due_loading.append((ignored_physical, 'physical events'))
+        user.physical, ignored_physical, bad_physical = filter_record(physical, "physical")
+        due_loading.append((ignored_physical, 'physical records'))
+        bad_records[1] = bad_physical
         user.ignored_physical = dict(ignored_physical)
     if screen is not None:
-        user.screen, ignored_screen, bad_screen = filter_record(screen)
-        due_loading.append((ignored_screen, 'screen events'))
+        user.screen, ignored_screen, bad_screen = filter_record(screen, "screen")
+        due_loading.append((ignored_screen, 'screen records'))
+        bad_records[2] = bad_screen
         user.ignored_screen = dict(ignored_screen)
     if stop_locations is not None:
-        user.stop_locations, ignored_stop_locations, bad_stop_locations = filter_record(stop_locations)
-        due_loading.append((ignored_stop_locations, 'stop_locations'))
+        user.stop_locations, ignored_stop_locations, bad_stop_locations = filter_record(stop_locations, "stop_locations")
+        due_loading.append((ignored_stop_locations, 'stop_locations records'))
+        bad_records[3] = bad_stop_locations
         user.ignored_stop_locations = dict(ignored_stop_locations)
 
     if len(due_loading) < 1 and warnings:
@@ -289,6 +293,7 @@ def load(name, records=None, physical=None, screen=None, stop_locations=None,
 
 
 def _read_network(user, records_path, attributes_path, read_function, extension=".csv"):
+    """Will not work with added/changed datatypes."""
     connections = {}
     correspondents = Counter([record.correspondent_id for record in user.records])
 
@@ -333,8 +338,9 @@ def _read_network(user, records_path, attributes_path, read_function, extension=
     # Return the network dictionary sorted by key
     return OrderedDict(sorted(connections.items(), key=lambda t: t[0]))
 
-def read_csv(user_id, records_path=None, physical_path=None, screen_path=None, 
-             stop_locations_path=None, attributes_path=None, network=False, 
+
+def read_csv(user_id, records_path=None, physical_path=None, screen_path=None,
+             stop_locations_path=None, attributes_path=None, network=False,
              describe=True, warnings=True, errors=False):
     """
     Load user records from a CSV file.
@@ -358,29 +364,31 @@ def read_csv(user_id, records_path=None, physical_path=None, screen_path=None,
         Path of the directory all the user stop_locations files.
 
     attributes_path : str, optional
-        Path of the directory containing attributes files (``key, value`` CSV file).
-        Attributes can for instance be variables such as like, age, or gender.
-        Attributes can be helpful to compute specific metrics.
+        Path of the directory containing attributes files (``key, value`` CSV
+        file). Attributes can for instance be variables such as like, age, or
+        gender. Attributes can be helpful to compute specific metrics.
 
     network : bool, optional
-        If network is True, bandicoot loads the network of the user's correspondants from the same path. Defaults to False.
+        If network is True, bandicoot loads the network of the user's
+        correspondants from the same path. Defaults to False.
 
     describe : boolean
-        If describe is True, it will print a description of the loaded user to the standard output.
+        If describe is True, it will print a description of the loaded user to
+        the standard output.
 
     errors : boolean
-        If errors is True, returns a tuple (user, errors), where user is the user object and errors are the records which could not
-        be loaded.
+        If errors is True, returns a tuple (user, errors), where user is the
+        user object and errors are the records which could not be loaded.
 
 
     Examples
     --------
 
-    >>> user = bandicoot.read_csv('sample_records', '.')
+    >>> user = bandicoot.read_csv('recs', '.')
     >>> print len(user.records)
     10
 
-    >>> user = bandicoot.read_csv('sample_records', '.', None, 'sample_attributes.csv')
+    >>> user = bandicoot.read_csv('recs', '.', None, 'sample_attributes.csv')
     >>> print user.attributes['age']
     25
 
