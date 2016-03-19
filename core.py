@@ -66,34 +66,34 @@ class Record(object):
 
 class Position(object):
     """
-    Data structure storing a generic location. Can be instantiated with either an
-    stop_location or a gps location. Printing out the position will show which was used
+    Data structure storing a generic location. Can be instantiated with either a
+    stop or a gps location. Printing out the position will show which was used
     to instantiate it.
     """
 
-    def __init__(self, stop_location=None, location=None):
-        self.stop_location = stop_location
+    def __init__(self, stop=None, location=None):
+        self.stop = stop
         self.location = location
 
     def _get_location(self, user):
         if self.location:
             return self.location
-        elif self.stop_location:
-            return user.stop_locations.get(self.stop_location)
+        elif self.stop:
+            return user.stops.get(self.stop)
         else:
             return None
 
     def type(self):
-        if self.stop_location:
-            return 'stop_location'
+        if self.stop:
+            return 'stop'
         else:
             return 'gps'
 
     def __repr__(self):
-        if self.stop_location and self.location:
-            return "Position(stop_location=%s, location=%s)" % (self.stop_location, self.location)
-        if self.stop_location:
-            return "Position(stop_location=%s)" % self.stop_location
+        if self.stop and self.location:
+            return "Position(stop=%s, location=%s)" % (self.stop, self.location)
+        if self.stop:
+            return "Position(stop=%s)" % self.stop
         if self.location:
             return "Position(location=(%s, %s))" % self.location
 
@@ -102,12 +102,12 @@ class Position(object):
     def __eq__(self, other):
         if not isinstance(other, Position):
             return False
-        if self.stop_location and other.stop_location:
-            return self.stop_location == other.stop_location
+        if self.stop and other.stop:
+            return self.stop == other.stop
         if self.location and other.location:
             return self.location == other.location
 
-        if not self.location and not self.stop_location and not other.location and not other.stop_location:
+        if not self.location and not self.stop and not other.location and not other.stop:
             return True
 
         return False
@@ -125,23 +125,26 @@ class User(object):
     """
 
     def __init__(self):
-        self._records = []
-        self._stop_locations = {}
+        self._cellular_records = []
+        self._physical_records = []
+        self._screen_records = []
+        self._stop_records = []
+        self._stops = {}
 
         self.name = None
-        self.stop_locations_path = None
+        self.stops_path = None
         self.attributes_path = None
 
         self.start_time = None
         self.end_time = None
-        self.night_start = datetime.time(19)
+        self.night_start = datetime.time(22)  # bandicoot orig. is 19!
         self.night_end = datetime.time(7)
         self.weekend = [6, 7]  # Saturday, Sunday by default
 
         self.home = None
         self.has_text = False
         self.has_call = False
-        self.has_stop_locations = False
+        self.has_stops = False
         self.attributes = {}
         self.ignored_records = None
 
@@ -153,45 +156,19 @@ class User(object):
         self.network = {}
 
     @property
-    def stop_locations(self):
-        """
-        The purpose of this is to hook into assignments to the
-        user's stop_location dictionary, and update records' location
-        based on the new value.
-        """
-        return self._stop_locations
+    def cellular_records(self):
+        return self._cellular_records
 
-    @stop_locations.setter
-    def stop_locations(self, input_):
-        self._stop_locations = input_
-        self.has_stop_locations = len(input_) > 0
-        for r in self._records:
-            if r.position.stop_location in self._stop_locations:
-                r.position.location = self._stop_locations[r.position.stop_location]
-            else:
-                r.position.location = None
-
-    @property
-    def records(self):
-        """
-        Can be used to get or set the list of user's records.
-
-        If the records are modified, the start and end time as well as the
-        infered house properties of the object User are recomputed.
-        """
-        return self._records
-
-    @records.setter
-    def records(self, input):
-        self._records = sorted(input, key=lambda r: r.datetime)
-        if len(self._records) > 0:
-            self.start_time = self._records[0].datetime
-            self.end_time = self._records[-1].datetime
+    @cellular_records.setter
+    def cellular_records(self, input):
+        self._cellular_records = sorted(input, key=lambda r: r.datetime)
+        if len(self._cellular_records) > 0:
+            self.start_time_cellular = self._cellular_records[0].datetime
+            self.end_time_cellular = self._cellular_records[-1].datetime
 
         # Reset all the states
         self.has_call = False
         self.has_text = False
-        self.has_stop_locations = False
 
         for r in self._records:
             if r.interaction == 'text':
@@ -199,10 +176,59 @@ class User(object):
             elif r.interaction == 'call':
                 self.has_call = True
 
-            if r.position.type() == 'stop_location':
-                self.has_stop_locations = True
+    @property
+    def physical_records(self):
+        return self._physical_records
 
-        self.recompute_home()
+    @physical_records.setter
+    def physical_records(self, input):
+        self._physical_records = sorted(input, key=lambda r: r.datetime)
+        if len(self._physical_records) > 0:
+            self.start_time_physical = self._physical_records[0].datetime
+            self.end_time_physical = self._physical_records[-1].datetime
+
+    @property
+    def screen_records(self):
+        return self._screen_records
+
+    @screen_records.setter
+    def screen_records(self, input):
+        self._screen_records = sorted(input, key=lambda r: r.datetime)
+        if len(self._screen_records) > 0:
+            self.start_time_screen = self._screen_records[0].datetime
+            self.end_time_screen = self._screen_records[-1].datetime
+
+    @property
+    def stop_records(self):
+        return self._stop_records
+
+    @stop_records.setter
+    def stop_records(self, input):
+        self._stop_records = sorted(input, key=lambda r: r.datetime)
+        if len(self._stop_records) > 0:
+            self.start_time_stop = self._stop_records[0].datetime
+            self.end_time_stop = self._stop_records[-1].datetime
+
+        #self.recompute_home()
+
+    @property
+    def stops(self):
+        """
+        The purpose of this is to hook into assignments to the
+        user's stop dictionary, and update records' location
+        based on the new value.
+        """
+        return self._stops
+
+    @stops.setter
+    def stops(self, input_):
+        self._stops = input_
+        self.has_stops = len(input_) > 0
+        for r in self._stop_records:
+            if r.position.stop in self._stops:
+                r.position.location = self._stops[r.position.stop]
+            else:
+                r.position.location = None
 
     def recompute_missing_neighbors(self):
         """
@@ -284,10 +310,10 @@ class User(object):
         else:
             print empty_box + "No attribute stored"
 
-        if len(self.stop_locations) == 0:
-            print empty_box + "No stop_location stored"
+        if len(self.stops) == 0:
+            print empty_box + "No stop stored"
         else:
-            print filled_box + format_int("stop_locations", len(self.stop_locations))
+            print filled_box + format_int("stops", len(self.stops))
 
         if self.has_home:
             print filled_box + "Has home"
@@ -311,8 +337,8 @@ class User(object):
 
     def recompute_home(self):
         """
-        Return the stop_location where the user spends most of his time at night.
-        None is returned if there are no candidates for a home stop_location
+        Return the stop where the user spends most of his time at night.
+        None is returned if there are no candidates for a home stop
         """
 
         if self.night_start < self.night_end:
@@ -354,4 +380,4 @@ class User(object):
             self.home = Position(location=new_home)
 
         else:
-            self.home = Position(stop_location=new_home)
+            self.home = Position(stop=new_home)

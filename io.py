@@ -160,7 +160,7 @@ def filter_record(records, datatype):
         'correspondent_id': lambda r: r.correspondent_id is not None,
         'datetime': lambda r: isinstance(r.datetime, datetime),
         'duration': lambda r: isinstance(r.duration, (int, float))
-        if datatype in ['stop_locations', 'screen'] or r.interaction == "call"
+        if datatype in ['stops', 'screen'] or r.interaction == "call"
         else True
     }
 
@@ -194,7 +194,7 @@ def filter_record(records, datatype):
 
 
 def load(name, cellular_records=None, physical_records=None,
-         screen_records=None, stop_location_records=None, attributes=None,
+         screen_records=None, stop_records=None, attributes=None,
          attributes_path=None, describe=False, warnings=False):
     """Create a new user.
 
@@ -221,7 +221,7 @@ def load(name, cellular_records=None, physical_records=None,
     screen_records: list
         A list or a generator of Record objects.
 
-    stop_location_records: list
+    stop_records: list
         A list or a generator of Record objects.
 
     attributes : dict
@@ -270,12 +270,12 @@ def load(name, cellular_records=None, physical_records=None,
         due_loading.append((ignored_screen_records, 'screen records'))
         bad_records[2] = bad_screen_records
         user.ignored_screen_records = dict(ignored_screen_records)
-    if stop_location_records is not None:
-        user.stop_location_records, ignored_stop_location_records, bad_stop_location_records = filter_record(
-            stop_location_records, "stop_locations")
-        due_loading.append((ignored_stop_location_records, 'stop_locations records'))
-        bad_records[3] = bad_stop_location_records
-        user.ignored_stop_location_records = dict(ignored_stop_location_records)
+    if stop_records is not None:
+        user.stop_records, ignored_stop_records, bad_stop_records = filter_record(
+            stop_records, "stops")
+        due_loading.append((ignored_stop_records, 'stops records'))
+        bad_records[3] = bad_stop_records
+        user.ignored_stop_records = dict(ignored_stop_records)
 
     if len(due_loading) < 1 and warnings:
         print warning_str("Warning: No data provided!")
@@ -345,7 +345,7 @@ def _read_network(user, records_path, attributes_path, read_function, extension=
 
 
 def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
-             stop_location_path=None, attributes_path=None, network=False,
+             stop_path=None, attributes_path=None, network=False,
              describe=True, warnings=True, errors=False):
     """
     Load user records from a CSV file.
@@ -365,8 +365,8 @@ def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
     screen_path : str
         Path of the directory all the user screen files.
 
-    stop_location_path : str
-        Path of the directory all the user stop_locations files.
+    stop_path : str
+        Path of the directory all the user stops files.
 
     attributes_path : str, optional
         Path of the directory containing attributes files (``key, value`` CSV
@@ -420,12 +420,12 @@ def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
     cellular_records = _reader(cellular_path, 1)
     physical_records = _reader(physical_path, 1)
     screen_records = _reader(screen_path, 1)
-    stop_location_records = _reader(stop_location_path, 1)
+    stop_records = _reader(stop_path, 1)
     attributes = _reader(attributes_path, 2)
 
     user, bad_records = load(
         user_id, cellular_records, physical_records, screen_records,
-        stop_location_records, attributes, attributes_path=attributes_path,
+        stop_records, attributes, attributes_path=attributes_path,
         describe=False, warnings=warnings
     )
 
