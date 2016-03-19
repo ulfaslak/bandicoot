@@ -193,10 +193,12 @@ def filter_record(records, datatype):
     return sort_records(list(_filter(records))), ignored, bad_records
 
 
-def load(name, cellular=None, physical=None, screen=None, stop_locations=None,
-         attributes=None, attributes_path=None, describe=False, warnings=False):
-    """
-    Create a new user. This function is used by read_csv. If you want to
+def load(name, cellular_records=None, physical_records=None,
+         screen_records=None, stop_location_records=None, attributes=None,
+         attributes_path=None, describe=False, warnings=False):
+    """Create a new user.
+
+    This function is used by read_csv. If you want to
     implement your own reader function, we advise you to use the load()
     function.
 
@@ -210,13 +212,16 @@ def load(name, cellular=None, physical=None, screen=None, stop_locations=None,
         The name of the user. It is stored in User.name and is useful when
         exporting metrics about multiple users.
 
-    cellular: list
+    cellular_records: list
         A list or a generator of Record objects.
 
-    physical: list
+    physical_records: list
         A list or a generator of Record objects.
 
-    stop_locations: list
+    screen_records: list
+        A list or a generator of Record objects.
+
+    stop_location_records: list
         A list or a generator of Record objects.
 
     attributes : dict
@@ -234,9 +239,9 @@ def load(name, cellular=None, physical=None, screen=None, stop_locations=None,
 
     .. code-block:: python
 
-       >>> cellular = [Cellular(...),...]
+       >>> cellular = [Record(...),...]
        >>> attributes = {'age': 60}
-       >>> load("Frodo", cellular, attributes)
+       >>> load("Frodo", cellular_records, attributes)
 
     Will returns a new User object.
     """
@@ -247,26 +252,30 @@ def load(name, cellular=None, physical=None, screen=None, stop_locations=None,
     due_loading = []
     bad_records = [None] * 4
 
-    if cellular is not None:
-        user.cellular, ignored_cellular, bad_cellular = filter_record(cellular, "cellular")
-        due_loading.append((ignored_cellular, 'cellular records'))
-        bad_records[0] = bad_cellular
-        user.ignored_cellular = dict(ignored_cellular)
-    if physical is not None:
-        user.physical, ignored_physical, bad_physical = filter_record(physical, "physical")
-        due_loading.append((ignored_physical, 'physical records'))
-        bad_records[1] = bad_physical
-        user.ignored_physical = dict(ignored_physical)
-    if screen is not None:
-        user.screen, ignored_screen, bad_screen = filter_record(screen, "screen")
-        due_loading.append((ignored_screen, 'screen records'))
-        bad_records[2] = bad_screen
-        user.ignored_screen = dict(ignored_screen)
-    if stop_locations is not None:
-        user.stop_locations, ignored_stop_locations, bad_stop_locations = filter_record(stop_locations, "stop_locations")
-        due_loading.append((ignored_stop_locations, 'stop_locations records'))
-        bad_records[3] = bad_stop_locations
-        user.ignored_stop_locations = dict(ignored_stop_locations)
+    if cellular_records is not None:
+        user.cellular_records, ignored_cellular_records, bad_cellular_records = filter_record(
+            cellular_records, "cellular")
+        due_loading.append((ignored_cellular_records, 'cellular records'))
+        bad_records[0] = bad_cellular_records
+        user.ignored_cellular_records = dict(ignored_cellular_records)
+    if physical_records is not None:
+        user.physical_records, ignored_physical_records, bad_physical_records = filter_record(
+            physical_records, "physical")
+        due_loading.append((ignored_physical_records, 'physical records'))
+        bad_records[1] = bad_physical_records
+        user.ignored_physical_records = dict(ignored_physical_records)
+    if screen_records is not None:
+        user.screen_records, ignored_screen_records, bad_screen_records = filter_record(
+            screen_records, "screen")
+        due_loading.append((ignored_screen_records, 'screen records'))
+        bad_records[2] = bad_screen_records
+        user.ignored_screen_records = dict(ignored_screen_records)
+    if stop_location_records is not None:
+        user.stop_location_records, ignored_stop_location_records, bad_stop_location_records = filter_record(
+            stop_location_records, "stop_locations")
+        due_loading.append((ignored_stop_location_records, 'stop_locations records'))
+        bad_records[3] = bad_stop_location_records
+        user.ignored_stop_location_records = dict(ignored_stop_location_records)
 
     if len(due_loading) < 1 and warnings:
         print warning_str("Warning: No data provided!")
@@ -336,7 +345,7 @@ def _read_network(user, records_path, attributes_path, read_function, extension=
 
 
 def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
-             stop_locations_path=None, attributes_path=None, network=False,
+             stop_location_path=None, attributes_path=None, network=False,
              describe=True, warnings=True, errors=False):
     """
     Load user records from a CSV file.
@@ -356,7 +365,7 @@ def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
     screen_path : str
         Path of the directory all the user screen files.
 
-    stop_locations_path : str
+    stop_location_path : str
         Path of the directory all the user stop_locations files.
 
     attributes_path : str, optional
@@ -381,7 +390,7 @@ def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
     --------
 
     >>> user = bandicoot.read_csv('cellular', '.')
-    >>> print len(user.cellular)
+    >>> print len(user.cellular_records)
     10
 
     >>> user = bandicoot.read_csv('cellular', '.', None, 'attributes.csv')
@@ -408,25 +417,24 @@ def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
                 pass
         return None
 
-    cellular = _reader(cellular_path, 1)
-    physical = _reader(physical_path, 1)
-    screen = _reader(screen_path, 1)
-    stop_locations = _reader(stop_locations_path, 1)
+    cellular_records = _reader(cellular_path, 1)
+    physical_records = _reader(physical_path, 1)
+    screen_records = _reader(screen_path, 1)
+    stop_location_records = _reader(stop_location_path, 1)
     attributes = _reader(attributes_path, 2)
 
     user, bad_records = load(
-        user_id,
-        cellular, physical, screen, stop_locations,
-        attributes, attributes_path=attributes_path, describe=False,
-        warnings=warnings
+        user_id, cellular_records, physical_records, screen_records,
+        stop_location_records, attributes, attributes_path=attributes_path,
+        describe=False, warnings=warnings
     )
 
     # Loads the network
     if network is True:
-        if cellular is not None:
+        if cellular_records is not None:
             user.network_cellular = _read_network(
                 user, cellular_path, attributes_path, read_csv)
-        if physical is not None:
+        if physical_records is not None:
             user.network_physical = _read_network(
                 user, physical_path, attributes_path, read_csv)
         user.recompute_missing_neighbors()
