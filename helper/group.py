@@ -57,9 +57,9 @@ def group_records(user, interaction_types=None, groupby='week', part_of_week='al
         if interaction_type == "screen":   return user.screen_records
         if interaction_type == "stop":     return user.stop_records
         return []
-    
+
     records = sorted(
-        flatarr([get_records(i) for i in interaction_types]),
+        flatarr([get_records(i) for i in flatarr(interaction_types)]),
         key=lambda r: r.datetime
     )
 
