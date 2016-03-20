@@ -297,7 +297,7 @@ def load(name, call_records=None, text_records=None, physical_records=None,
                     filter_record(records, _type)
             due_loading.append((ignored_records, _type))
             bad_records[i] = _bad_records
-            vars(user)["ignored_" + _type + "_records"] = dict(ignored_records)
+            vars(user)["ignored_records"][_type] = dict(ignored_records)
 
     if len(due_loading) < 1 and warnings:
         print warning_str("Warning: No data provided!")

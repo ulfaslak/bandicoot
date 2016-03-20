@@ -145,7 +145,7 @@ class User(object):
         self.has_stop = False
         self.has_stops = False
         self.attributes = {}
-        self.ignored_records = None
+        self.ignored_records = {}
 
         self.percent_outofnetwork_calls = 0
         self.percent_outofnetwork_texts = 0
@@ -164,7 +164,7 @@ class User(object):
         if len(self._call_records) > 0:
             self.start_time['call'] = self._call_records[0].datetime
             self.end_time['call'] = self._call_records[-1].datetime
-            self.has_call = False
+            self.has_call = True
 
     @property
     def text_records(self):
@@ -176,7 +176,7 @@ class User(object):
         if len(self._text_records) > 0:
             self.start_time['text'] = self._text_records[0].datetime
             self.end_time['text'] = self._text_records[-1].datetime
-            self.has_text = False
+            self.has_text = True
 
     @property
     def physical_records(self):
@@ -188,6 +188,7 @@ class User(object):
         if len(self._physical_records) > 0:
             self.start_time['physical'] = self._physical_records[0].datetime
             self.end_time['physical'] = self._physical_records[-1].datetime
+            self.has_physical = True
 
     @property
     def screen_records(self):
@@ -199,6 +200,7 @@ class User(object):
         if len(self._screen_records) > 0:
             self.start_time['screen'] = self._screen_records[0].datetime
             self.end_time['screen'] = self._screen_records[-1].datetime
+            self.has_screen = True
 
     @property
     def stop_records(self):
@@ -210,6 +212,7 @@ class User(object):
         if len(self._stop_records) > 0:
             self.start_time['stop'] = self._stop_records[0].datetime
             self.end_time['stop'] = self._stop_records[-1].datetime
+            self.has_stop = True
 
         #self.recompute_home()
 
