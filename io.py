@@ -134,33 +134,29 @@ def _tryto(function, argument):
 
 
 def _parse_record(data):
-    def _map_duration(s):
-        return int(s) if s != '' else None
-
     def _map_position(data):
-        antenna = Position()
-        if 'antenna_id' in data:
-            antenna.antenna = data['antenna_id']
-            return antenna
-        elif 'place_id' in data:
-            raise NameError("Use field name 'antenna_id' in input files. \
-                'place_id' is deprecated.")
+        stop = Position()
+        if 'position' in data:
+            stop.stop = data['stop_id']
+            return stop
         if 'latitude' in data and 'longitude' in data:
-            antenna.position = float(data['latitude']), float(data['longitude'])
-        return antenna
+            stop.position = float(data['latitude']), float(data['longitude'])
+        return stop
 
-    print TYPE_SCHEME[data['interaction']]
-
-    return Record(interaction=data['interaction'],
-                  direction=data['direction'],
-                  correspondent_id=data['correspondent_id'],
-                  datetime=_tryto(
-                    lambda x: datetime.strptime(x, "%Y-%m-%d %H:%M:%S"),
-                    data['datetime']
-                    ),
-                  duration=_tryto(_map_duration, data['duration']),
-                  position=_tryto(_map_position, data)
-                  )
+    
+    kwargs = {
+        "duration": int(data['duration']),
+        "correspondent_id": data['correspondent_id'],
+        "datetime": datetime.strptime(data['datetime'], "%Y-%m-%d %H:%M:%S"),
+        "direction": data['direction'],
+        "interaction": data['interaction'],
+        "position": _map_position(data),
+        "event": data['event']
+    }
+    
+    kws = TYPE_SCHEME[data['interaction']].keys()
+    
+    return Record(**dict((kw, kwargs[kw]) for kw in kws)
 
 
 def filter_record(records, interaction_type):
