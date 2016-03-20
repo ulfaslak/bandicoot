@@ -3,7 +3,6 @@
 from __future__ import with_statement, division
 
 from bandicoot_dev.helper.tools import OrderedDict
-
 from bandicoot_dev.core import User, Record, Position
 from bandicoot_dev.helper.tools import warning_str
 from bandicoot_dev.utils import flatten
@@ -276,46 +275,26 @@ def load(name, call_records=None, text_records=None, physical_records=None,
         (stop_records, "stop")
     ]
 
-    for i, (records, name) in enumerate(interaction_types):
+    for i, (records, _type) in enumerate(interaction_types):
         if records is not None:
-            vars(user)[name], ignored_records, bad_records = filter_record(
-                records, name
-            )
-            due_loading.append((ignored_records, name))
-            bad_records[i] = bad_records
-            vars(user)["ignored_" + name + "_records"] = dict(ignored_records)
-
-    # # This is ugly and should be cleaned up!
-    # if call_records is not None:
-    #     user.call_records, ignored_call_records, bad_call_records = filter_record(
-    #         call_records, "call")
-    #     due_loading.append((ignored_call_records, 'call records'))
-    #     bad_records[0] = bad_call_records
-    #     user.ignored_call_records = dict(ignored_call_records)
-    # if text_records is not None:
-    #     user.text_records, ignored_text_records, bad_text_records = filter_record(
-    #         text_records, "text")
-    #     due_loading.append((ignored_text_records, 'text records'))
-    #     bad_records[0] = bad_text_records
-    #     user.ignored_text_records = dict(ignored_text_records)
-    # if physical_records is not None:
-    #     user.physical_records, ignored_physical_records, bad_physical_records = filter_record(
-    #         physical_records, "physical")
-    #     due_loading.append((ignored_physical_records, 'physical records'))
-    #     bad_records[1] = bad_physical_records
-    #     user.ignored_physical_records = dict(ignored_physical_records)
-    # if screen_records is not None:
-    #     user.screen_records, ignored_screen_records, bad_screen_records = filter_record(
-    #         screen_records, "screen")
-    #     due_loading.append((ignored_screen_records, 'screen records'))
-    #     bad_records[2] = bad_screen_records
-    #     user.ignored_screen_records = dict(ignored_screen_records)
-    # if stop_records is not None:
-    #     user.stop_records, ignored_stop_records, bad_stop_records = filter_record(
-    #         stop_records, "stops")
-    #     due_loading.append((ignored_stop_records, 'stops records'))
-    #     bad_records[3] = bad_stop_records
-    #     user.ignored_stop_records = dict(ignored_stop_records)
+            if _type == "call":
+                user.call_records, ignored_records, _bad_records = \
+                    filter_record(records, _type)
+            if _type == "text":
+                user.text_records, ignored_records, _bad_records = \
+                    filter_record(records, _type)
+            if _type == "physical":
+                user.physical_records, ignored_records, _bad_records = \
+                    filter_record(records, _type)
+            if _type == "screen":
+                user.screen_records, ignored_records, _bad_records = \
+                    filter_record(records, _type)
+            if _type == "stop":
+                user.stop_records, ignored_records, _bad_records = \
+                    filter_record(records, _type)
+            due_loading.append((ignored_records, _type))
+            bad_records[i] = _bad_records
+            vars(user)["ignored_" + _type + "_records"] = dict(ignored_records)
 
     if len(due_loading) < 1 and warnings:
         print warning_str("Warning: No data provided!")
