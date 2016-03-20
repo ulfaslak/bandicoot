@@ -1,6 +1,6 @@
 from functools import partial
 import itertools
-from bandicoot_dev.helper.tools import mean, std, SummaryStats, advanced_wrap, AutoVivification
+from bandicoot_dev.helper.tools import mean, std, SummaryStats, advanced_wrap, AutoVivification, flatarr
 
 
 DATE_GROUPERS = {
@@ -15,6 +15,15 @@ DATE_GROUPERS = {
 def _group_date(records, _fun):
     for _, chunk in itertools.groupby(records, key=lambda r: _fun(r.datetime)):
         yield chunk
+
+
+def get_records(interaction_type):
+    if interaction_type == "call":     return user.call_records
+    if interaction_type == "text":     return user.text_records
+    if interaction_type == "physical": return user.physical_records
+    if interaction_type == "screen":   return user.screen_records
+    if interaction_type == "stop":     return user.stop_records
+    return []
 
 
 def group_records(user, interaction=None, groupby='week', part_of_week='allweek', part_of_day='allday'):
@@ -47,12 +56,11 @@ def group_records(user, interaction=None, groupby='week', part_of_week='allweek'
         * None, to use all records.
     """
 
-    records = user.records
+    ## -----------------------------------------------------------------------
+    ## Change interaction paradigme such "callandtext" --> [['call', 'text']].
+    ## -----------------------------------------------------------------------
 
-    if interaction == 'callandtext':
-        records = filter(lambda r: r.interaction in ['call', 'text'], records)
-    elif interaction is not None:
-        records = filter(lambda r: r.interaction == interaction, records)
+    records = flatarr([get_records(e) for e in flatarr(interaction)])
 
     if part_of_week == 'weekday':
         records = filter(lambda r: r.datetime.isoweekday() not in user.weekend, records)
@@ -190,10 +198,8 @@ def grouping(f=None, user_kwd=False, interaction=['call', 'text'], summary='defa
     def wrapper(user, groupby='week', interaction=interaction, summary=summary, split_week=False, split_day=False, datatype=None, **kwargs):
         if interaction is None:
             interaction = ['call', 'text']
-        elif isinstance(interaction, str):
-            interaction = [interaction]
-        else:
-            interaction = interaction[:]  # copy the list for more safety
+        if type(interaction) is str:
+            interaction = [interaction.split("and")]
 
         part_of_day = ['allday']
         if split_day:
@@ -203,10 +209,10 @@ def grouping(f=None, user_kwd=False, interaction=['call', 'text'], summary='defa
         if split_week:
             part_of_week += ['weekday', 'weekend']
 
-        for i in interaction:
-            if i not in ['callandtext', 'call', 'text', 'location']:
-                raise ValueError("%s is not a valid interaction value. Only 'call', "
-                                 "'text', and 'location' are accepted." % i)
+        for i in flatarr(interaction):
+            if i not in ['call', 'text', 'physical', 'screen', 'stop']:
+                raise ValueError("%s is not a valid interaction value. Only 'call', \
+                    'text', 'physical', 'screen', 'stop' are accepted." % i)
 
         def map_filters(interaction, part_of_week, part_of_day):
             """
@@ -221,13 +227,14 @@ def grouping(f=None, user_kwd=False, interaction=['call', 'text'], summary='defa
                         else:
                             result = [f(g, **kwargs) for g in group_records(user, i, groupby, filter_week, filter_day)]
 
-                        yield filter_week, filter_day, i, result
+                        i_label = '+'.join(i) if type(i) is list else i
+                        yield filter_week, filter_day, i_label, result
 
         returned = AutoVivification()  # nested dict structure
-        for (f_w, f_d, i, m) in map_filters(interaction, part_of_week, part_of_day):
+        for (f_w, f_d, i_label, m) in map_filters(interaction, part_of_week, part_of_day):
             if groupby is None:
                 m = m[0] if len(m) != 0 else None
-            returned[f_w][f_d][i] = statistics(m, summary=summary, datatype=datatype)
+            returned[f_w][f_d][i_label] = statistics(m, summary=summary, datatype=datatype)
 
         return returned
 

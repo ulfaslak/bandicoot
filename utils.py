@@ -1,5 +1,5 @@
 from bandicoot_dev.helper.tools import OrderedDict, warning_str
-from bandicoot_dev.helper.group import group_records, DATE_GROUPERS
+from bandicoot_dev.helper.group import group_records, DATE_GROUPERS, get_records
 import bandicoot_dev as bc
 
 from functools import partial
@@ -63,7 +63,6 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
     has_text                            whether or not records include texts
     has_home                            whether or not a :meth:`home location <bandicoot.core.User.recompute_home>` has been found
     has_network                         whether or not correspondents where loaded
-    percent_records_missing_location    percentage of records without location
     percent_outofnetwork_calls          percentage of calls, received or emitted, made with a correspondant not loaded in the network
     percent_outofnetwork_texts          percentage of texts with contacts not loaded in the network
     percent_outofnetwork_contacts       percentage of contacts not loaded in the network
@@ -92,7 +91,7 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
 
     # Warn the user if they are selecting weekly and there's only one week
     if groupby is not None:
-        record_types = [user.cellular_records, user.physical_records, user.screen_records, user.stop_records]
+        record_types = [user.call_records, user.text_records, user.physical_records, user.screen_records, user.stop_records]
         for records in record_types:
             if len(records) < 1:
                 continue
@@ -146,8 +145,8 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
         ('groupby', groupby),
         ('split_week', split_week),
         ('split_day', split_day),
-        ('start_time', user.start_time and str(user.start_time)),
-        ('end_time', user.end_time and str(user.end_time)),
+        ('start_time_call', user.start_time['call'] and str(user.start_time['call'])),
+        ('end_time_call', user.end_time['call'] and str(user.end_time['call'])),
         ('night_start', str(user.night_start)),
         ('night_end', str(user.night_end)),
         ('weekend', user.weekend),
@@ -156,31 +155,39 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
         ('has_text', user.has_text),
         ('has_home', user.has_home),
         ('has_network', user.has_network),
-        ('percent_records_missing_location', bc.helper.tools.percent_records_missing_location(user)),
         ('percent_outofnetwork_calls', user.percent_outofnetwork_calls),
         ('percent_outofnetwork_texts', user.percent_outofnetwork_texts),
         ('percent_outofnetwork_contacts', user.percent_outofnetwork_contacts),
         ('percent_outofnetwork_call_durations', user.percent_outofnetwork_call_durations),
     ])
 
-    if user.records is not None:
-        reporting['number_of_records'] = len(user.records)
-    else:
-        reporting['number_of_records'] = 0.
+    record_interaction_types = [
+        (user.call_records, user.ignored_call_records, "call_records"),
+        (user.text_records, user.ignored_text_records, "text_records"),
+        (user.physical_records, user.ignored_physical_records, "physical_records"),
+        (user.screen_records, user.ignored_screen_records, "screen_records"),
+        (user.stop_records, user.ignored_stop_records, "stop_records"),
+    ]
 
-    if user.ignored_records is not None:
-        reporting['ignored_records'] = user.ignored_records
+    for records, ignored_records, name in record_interaction_types:
+        if records is not None:
+            reporting['number_of_%s' % name] = len(records)
+        else:
+            reporting['number_of_%s' % name] = 0
+
+        if ignored_records is not None:
+            reporting['ignored_%s' % name] = ignored_records
 
     returned = OrderedDict([
         ('name', user.name),
         ('reporting', reporting)
     ])
-    
+
     if spatial:
         functions = individual_functions + spatial_functions
     else:
         functions = individual_functions
-    
+
     for fun, datatype in functions:
         try:
             metric = fun(user, groupby=groupby, summary=summary, datatype=datatype, split_week=split_week, split_day=split_day)

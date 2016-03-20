@@ -340,3 +340,16 @@ class AutoVivification(dict):
         except KeyError:
             value = self[item] = type(self)()
             return value
+
+
+def flatarr(arr):
+    """Flatten list, list of lists, or mix."""
+
+    if type(arr) is str:
+        if "and" in arr:
+            return arr.split("and")
+        else:
+            return [arr]
+
+    flatten = lambda l: [item for sublist in l for item in sublist]
+    return flatten([e if type(e) is list else [e] for e in arr])

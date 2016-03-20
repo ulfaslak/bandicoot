@@ -125,7 +125,8 @@ class User(object):
     """
 
     def __init__(self):
-        self._cellular_records = []
+        self._call_records = []
+        self._text_records = []
         self._physical_records = []
         self._screen_records = []
         self._stop_records = []
@@ -135,8 +136,8 @@ class User(object):
         self.stops_path = None
         self.attributes_path = None
 
-        self.start_time = {"cellular": None, "physical": None, "screen": None, "stop": None}
-        self.end_time = {"cellular": None, "physical": None, "screen": None, "stop": None}
+        self.start_time = {"call": None, "text": None, "physical": None, "screen": None, "stop": None}
+        self.end_time = {"call": None, "text": None, "physical": None, "screen": None, "stop": None}
         self.night_start = datetime.time(22)  # bandicoot orig. is 19!
         self.night_end = datetime.time(7)
         self.weekend = [6, 7]  # Saturday, Sunday by default
@@ -144,6 +145,9 @@ class User(object):
         self.home = None
         self.has_text = False
         self.has_call = False
+        self.has_physical = False
+        self.has_screen = False
+        self.has_stop = False
         self.has_stops = False
         self.attributes = {}
         self.ignored_records = None
@@ -156,25 +160,28 @@ class User(object):
         self.network = {}
 
     @property
-    def cellular_records(self):
-        return self._cellular_records
+    def call_records(self):
+        return self._call_records
 
-    @cellular_records.setter
-    def cellular_records(self, input):
-        self._cellular_records = sorted(input, key=lambda r: r.datetime)
-        if len(self._cellular_records) > 0:
-            self.start_time['cellular'] = self._cellular_records[0].datetime
-            self.end_time['cellular'] = self._cellular_records[-1].datetime
+    @call_records.setter
+    def call_records(self, input):
+        self._call_records = sorted(input, key=lambda r: r.datetime)
+        if len(self._call_records) > 0:
+            self.start_time['call'] = self._call_records[0].datetime
+            self.end_time['call'] = self._call_records[-1].datetime
+            self.has_call = False
 
-        # Reset all the states
-        self.has_call = False
-        self.has_text = False
+    @property
+    def text_records(self):
+        return self._text_records
 
-        for r in self._cellular_records:
-            if r.interaction == 'text':
-                self.has_text = True
-            elif r.interaction == 'call':
-                self.has_call = True
+    @text_records.setter
+    def text_records(self, input):
+        self._text_records = sorted(input, key=lambda r: r.datetime)
+        if len(self._text_records) > 0:
+            self.start_time['text'] = self._text_records[0].datetime
+            self.end_time['text'] = self._text_records[-1].datetime
+            self.has_text = False
 
     @property
     def physical_records(self):
