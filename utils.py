@@ -1,5 +1,5 @@
 from bandicoot_dev.helper.tools import OrderedDict, warning_str
-from bandicoot_dev.helper.group import group_records, DATE_GROUPERS, get_records
+from bandicoot_dev.helper.group import group_records, DATE_GROUPERS
 import bandicoot_dev as bc
 
 from functools import partial
@@ -136,8 +136,8 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
         bc.network.assortativity_attributes#,
         #bc.network.assortativity_indicators
     ]
-
-    interaction_types = [k for k,v in supported_types.iteritems() if v]
+    
+    interaction_types = [k for k,v in user.supported_types.iteritems() if v]
     groups = [
         [r for r in g] 
         for g in group_records(user, interaction_types, groupby)
@@ -155,8 +155,11 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
         ('night_end', str(user.night_end)),
         ('weekend', user.weekend),
         ('bins', len(groups)),
-        ('has_call', user.has_call),
-        ('has_text', user.has_text),
+        ('has_call', user.supported_types['call']),
+        ('has_text', user.supported_types['text']),
+        ('has_physical', user.supported_types['physical']),
+        ('has_screen', user.supported_types['screen']),
+        ('has_stop', user.supported_types['stop']),
         ('has_home', user.has_home),
         ('has_network', user.has_network),
         ('percent_outofnetwork_calls', user.percent_outofnetwork_calls),
@@ -166,11 +169,11 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
     ])
 
     record_interaction_types = [
-        (user.call_records, user.ignored_call_records, "call_records"),
-        (user.text_records, user.ignored_text_records, "text_records"),
-        (user.physical_records, user.ignored_physical_records, "physical_records"),
-        (user.screen_records, user.ignored_screen_records, "screen_records"),
-        (user.stop_records, user.ignored_stop_records, "stop_records"),
+        (user.call_records, user.ignored_records['call'], "call_records"),
+        (user.text_records, user.ignored_records['text'], "text_records"),
+        (user.physical_records, user.ignored_records['physical'], "physical_records"),
+        (user.screen_records, user.ignored_records['screen'], "screen_records"),
+        (user.stop_records, user.ignored_records['stop'], "stop_records"),
     ]
 
     for records, ignored_records, name in record_interaction_types:

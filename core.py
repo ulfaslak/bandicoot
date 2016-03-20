@@ -148,7 +148,14 @@ class User(object):
         }
 
         self.attributes = {}
-        self.ignored_records = {}
+        self.ignored_records = {
+            "text": None,
+            "call": None,
+            "physical": None,
+            "screen": None,
+            "stop": None,
+            "stops": None
+        }
 
         self.percent_outofnetwork_calls = 0
         self.percent_outofnetwork_texts = 0
