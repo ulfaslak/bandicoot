@@ -142,21 +142,26 @@ def _parse_record(data):
         if 'latitude' in data and 'longitude' in data:
             stop.position = float(data['latitude']), float(data['longitude'])
         return stop
-
     
-    kwargs = {
-        "duration": int(data['duration']),
-        "correspondent_id": data['correspondent_id'],
-        "datetime": datetime.strptime(data['datetime'], "%Y-%m-%d %H:%M:%S"),
-        "direction": data['direction'],
-        "interaction": data['interaction'],
-        "position": _map_position(data),
-        "event": data['event']
-    }
+    def kwargs(kw):
+        if kw=="duration":
+            return int(data['duration'])
+        if kw=="correspondent_id":
+            return data['correspondent_id']
+        if kw=="datetime":
+            return datetime.strptime(data['datetime'], "%Y-%m-%d %H:%M:%S")
+        if kw=="direction":
+            return data['direction']
+        if kw=="interaction":
+            return data['interaction']
+        if kw=="position":
+            return _map_position(data)
+        if kw=="event":
+            return data['event']
     
     kws = TYPE_SCHEME[data['interaction']].keys()
     
-    return Record(**dict((kw, kwargs[kw]) for kw in kws)
+    return Record(**dict((kw, kwargs(kw)) for kw in kws))
 
 
 def filter_record(records, interaction_type):
