@@ -130,14 +130,16 @@ def _parse_record(data):
                   )
 
 
-def filter_record(records, datatype):
+def filter_record(records, interaction_type):
     """Filter records and remove items with missing or inconsistent fields.
 
     Parameters
     ----------
-
     records : list
-        A list of Cellular/Screen/.. objects
+        A list of Record objects
+
+    interaction_type : str
+        The interaction type of the list of records
 
     Returns
     -------
@@ -155,13 +157,46 @@ def filter_record(records, datatype):
         return sorted_min_records
 
     scheme = {
-        'interaction': lambda r: r.interaction in ['call', 'text', 'physical', ''],
-        'direction': lambda r: r.direction in ['in', 'out', ''],
-        'correspondent_id': lambda r: r.correspondent_id is not None,
+        'interaction': lambda r: r.interaction in ['call', 'text', 'physical', 'screen', 'stop'],
+        'direction': lambda r: r.direction in ['in', 'out']
+        if interaction_type in ['call', 'text'] else True,
+        'correspondent_id': lambda r: r.correspondent_id is not None
+        if interaction_type in ['call', 'text', 'physical'] else True,
         'datetime': lambda r: isinstance(r.datetime, datetime),
         'duration': lambda r: isinstance(r.duration, (int, float))
-        if datatype in ['stops', 'screen'] or r.interaction == "call"
-        else True
+        if interaction_type in ['call', 'screen', 'stop'] else True
+    }
+
+    def dec(interaction_type, subscheme):
+        """Add datetime and interaction to all subschema."""
+        filters = {
+            'datetime': lambda r: isinstance(r.datetime, datetime),
+            'interaction': lambda r: r.interaction == interaction_type
+        }
+        subscheme.update(filters)
+        return subscheme
+
+    scheme = {
+        'call': dec('call', {
+            'direction': lambda r: r.direction in ['in', 'out'],
+            'correspondent_id': lambda r: r.correspondent_id is not None,
+            'duration': lambda r: isinstance(r.duration, (int, float))
+        }),
+        'text': dec('text', {
+            'direction': lambda r: r.direction in ['in', 'out'],
+            'correspondent_id': lambda r: r.correspondent_id is not None,
+        }),
+        'physical': dec('physical', {
+            'correspondent_id': lambda r: r.correspondent_id is not None,
+        }),
+        'screen': dec('screen', {
+            'duration': lambda r: isinstance(r.duration, (int, float))
+        }),
+        'stop': dec('stop', {
+            'duration': lambda r: isinstance(r.duration, (int, float)),
+            'position': lambda r: isinstance(r.position, (str)),
+            'event': lambda r: isinstance(r.event, (str))
+        })
     }
 
     ignored = OrderedDict([
@@ -179,7 +214,7 @@ def filter_record(records, datatype):
         global removed
         for r in records:
             valid = True
-            for key, test in scheme.iteritems():
+            for key, test in scheme['interaction_type'].iteritems():
                 if not test(r):
                     ignored[key] += 1
                     bad_records.append(r)
