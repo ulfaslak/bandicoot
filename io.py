@@ -156,18 +156,8 @@ def filter_record(records, interaction_type):
                 removed.".format(num_dup))
         return sorted_min_records
 
-    scheme = {
-        'interaction': lambda r: r.interaction in ['call', 'text', 'physical', 'screen', 'stop'],
-        'direction': lambda r: r.direction in ['in', 'out']
-        if interaction_type in ['call', 'text'] else True,
-        'correspondent_id': lambda r: r.correspondent_id is not None
-        if interaction_type in ['call', 'text', 'physical'] else True,
-        'datetime': lambda r: isinstance(r.datetime, datetime),
-        'duration': lambda r: isinstance(r.duration, (int, float))
-        if interaction_type in ['call', 'screen', 'stop'] else True
-    }
 
-    def dec(interaction_type, subscheme):
+    def wrap(interaction_type, subscheme):
         """Add datetime and interaction to all subschema."""
         filters = {
             'datetime': lambda r: isinstance(r.datetime, datetime),
@@ -177,22 +167,22 @@ def filter_record(records, interaction_type):
         return subscheme
 
     scheme = {
-        'call': dec('call', {
+        'call': wrap('call', {
             'direction': lambda r: r.direction in ['in', 'out'],
             'correspondent_id': lambda r: r.correspondent_id is not None,
             'duration': lambda r: isinstance(r.duration, (int, float))
         }),
-        'text': dec('text', {
+        'text': wrap('text', {
             'direction': lambda r: r.direction in ['in', 'out'],
             'correspondent_id': lambda r: r.correspondent_id is not None,
         }),
-        'physical': dec('physical', {
+        'physical': wrap('physical', {
             'correspondent_id': lambda r: r.correspondent_id is not None,
         }),
-        'screen': dec('screen', {
+        'screen': wrap('screen', {
             'duration': lambda r: isinstance(r.duration, (int, float))
         }),
-        'stop': dec('stop', {
+        'stop': wrap('stop', {
             'duration': lambda r: isinstance(r.duration, (int, float)),
             'position': lambda r: isinstance(r.position, (str)),
             'event': lambda r: isinstance(r.event, (str))
@@ -228,7 +218,7 @@ def filter_record(records, interaction_type):
     return sort_records(list(_filter(records))), ignored, bad_records
 
 
-def load(name, cellular_records=None, physical_records=None,
+def load(name, call_records=None, text_records=None, physical_records=None,
          screen_records=None, stop_records=None, attributes=None,
          attributes_path=None, describe=False, warnings=False):
     """Create a new user.
@@ -247,16 +237,7 @@ def load(name, cellular_records=None, physical_records=None,
         The name of the user. It is stored in User.name and is useful when
         exporting metrics about multiple users.
 
-    cellular_records: list
-        A list or a generator of Record objects.
-
-    physical_records: list
-        A list or a generator of Record objects.
-
-    screen_records: list
-        A list or a generator of Record objects.
-
-    stop_records: list
+    *_records: list
         A list or a generator of Record objects.
 
     attributes : dict
@@ -274,9 +255,9 @@ def load(name, cellular_records=None, physical_records=None,
 
     .. code-block:: python
 
-       >>> cellular = [Record(...),...]
+       >>> call_records = [Record(...),...]
        >>> attributes = {'age': 60}
-       >>> load("Frodo", cellular_records, attributes)
+       >>> load("Frodo", call_records, attributes)
 
     Will returns a new User object.
     """
@@ -285,32 +266,56 @@ def load(name, cellular_records=None, physical_records=None,
     user.attributes_path = attributes_path
 
     due_loading = []
-    bad_records = [None] * 4
+    bad_records = [None] * 5
 
-    if cellular_records is not None:
-        user.cellular_records, ignored_cellular_records, bad_cellular_records = filter_record(
-            cellular_records, "cellular")
-        due_loading.append((ignored_cellular_records, 'cellular records'))
-        bad_records[0] = bad_cellular_records
-        user.ignored_cellular_records = dict(ignored_cellular_records)
-    if physical_records is not None:
-        user.physical_records, ignored_physical_records, bad_physical_records = filter_record(
-            physical_records, "physical")
-        due_loading.append((ignored_physical_records, 'physical records'))
-        bad_records[1] = bad_physical_records
-        user.ignored_physical_records = dict(ignored_physical_records)
-    if screen_records is not None:
-        user.screen_records, ignored_screen_records, bad_screen_records = filter_record(
-            screen_records, "screen")
-        due_loading.append((ignored_screen_records, 'screen records'))
-        bad_records[2] = bad_screen_records
-        user.ignored_screen_records = dict(ignored_screen_records)
-    if stop_records is not None:
-        user.stop_records, ignored_stop_records, bad_stop_records = filter_record(
-            stop_records, "stops")
-        due_loading.append((ignored_stop_records, 'stops records'))
-        bad_records[3] = bad_stop_records
-        user.ignored_stop_records = dict(ignored_stop_records)
+    interaction_types = [
+        (call_records, "call"),
+        (text_records, "text"),
+        (physical_records, "physical"),
+        (screen_records, "screen"),
+        (stop_records, "stop")
+    ]
+
+    for i, (records, name) in enumerate(interaction_types):
+        if records is not None:
+            vars(user)[name], ignored_records, bad_records = filter_record(
+                records, name
+            )
+            due_loading.append((ignored_records, name))
+            bad_records[i] = bad_records
+            vars(user)["ignored_" + name + "_records"] = dict(ignored_records)
+
+    # # This is ugly and should be cleaned up!
+    # if call_records is not None:
+    #     user.call_records, ignored_call_records, bad_call_records = filter_record(
+    #         call_records, "call")
+    #     due_loading.append((ignored_call_records, 'call records'))
+    #     bad_records[0] = bad_call_records
+    #     user.ignored_call_records = dict(ignored_call_records)
+    # if text_records is not None:
+    #     user.text_records, ignored_text_records, bad_text_records = filter_record(
+    #         text_records, "text")
+    #     due_loading.append((ignored_text_records, 'text records'))
+    #     bad_records[0] = bad_text_records
+    #     user.ignored_text_records = dict(ignored_text_records)
+    # if physical_records is not None:
+    #     user.physical_records, ignored_physical_records, bad_physical_records = filter_record(
+    #         physical_records, "physical")
+    #     due_loading.append((ignored_physical_records, 'physical records'))
+    #     bad_records[1] = bad_physical_records
+    #     user.ignored_physical_records = dict(ignored_physical_records)
+    # if screen_records is not None:
+    #     user.screen_records, ignored_screen_records, bad_screen_records = filter_record(
+    #         screen_records, "screen")
+    #     due_loading.append((ignored_screen_records, 'screen records'))
+    #     bad_records[2] = bad_screen_records
+    #     user.ignored_screen_records = dict(ignored_screen_records)
+    # if stop_records is not None:
+    #     user.stop_records, ignored_stop_records, bad_stop_records = filter_record(
+    #         stop_records, "stops")
+    #     due_loading.append((ignored_stop_records, 'stops records'))
+    #     bad_records[3] = bad_stop_records
+    #     user.ignored_stop_records = dict(ignored_stop_records)
 
     if len(due_loading) < 1 and warnings:
         print warning_str("Warning: No data provided!")
@@ -318,7 +323,7 @@ def load(name, cellular_records=None, physical_records=None,
     for ignored, name in due_loading:
         if ignored['all'] != 0:
             if warnings:
-                print warning_str("Warning: %d %s(s) were removed due to missing or incomplete fields." % (ignored['all'],name))
+                print warning_str("Warning: %d %s record(s) were removed due to missing or incomplete fields." % (ignored['all'],name))
             for k in ignored.keys():
                 if k != 'all' and ignored[k] != 0 and warnings:
                     print warning_str(" " * 9 + "%s: %i %s(s) with incomplete values" % (k, ignored[k], name))
@@ -379,9 +384,9 @@ def _read_network(user, records_path, attributes_path, read_function, extension=
     return OrderedDict(sorted(connections.items(), key=lambda t: t[0]))
 
 
-def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
-             stop_path=None, attributes_path=None, network=False,
-             describe=True, warnings=True, errors=False):
+def read_csv(user_id, call_path=None, text_path=None, physical_path=None,
+             screen_path=None, stop_path=None, attributes_path=None,
+             network=False, describe=True, warnings=True, errors=False):
     """
     Load user records from a CSV file.
 
@@ -391,17 +396,8 @@ def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
     user_id : str
         ID of the user (filename)
 
-    cellular_path : str
+    *_path : str
         Path of the directory all the user record files.
-
-    physical_path : str
-        Path of the directory all the user physical files.
-
-    screen_path : str
-        Path of the directory all the user screen files.
-
-    stop_path : str
-        Path of the directory all the user stops files.
 
     attributes_path : str, optional
         Path of the directory containing attributes files (``key, value`` CSV
@@ -424,11 +420,11 @@ def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
     Examples
     --------
 
-    >>> user = bandicoot.read_csv('cellular', '.')
-    >>> print len(user.cellular_records)
+    >>> user = bandicoot.read_csv('call', '.')
+    >>> print len(user.call_records)
     10
 
-    >>> user = bandicoot.read_csv('cellular', '.', None, 'attributes.csv')
+    >>> user = bandicoot.read_csv('call', '.', None, 'attributes.csv')
     >>> print user.attributes['age']
     25
 
@@ -452,23 +448,27 @@ def read_csv(user_id, cellular_path=None, physical_path=None, screen_path=None,
                 pass
         return None
 
-    cellular_records = _reader(cellular_path, 1)
+    call_records = _reader(call_path, 1)
+    text_records = _reader(text_path, 1)
     physical_records = _reader(physical_path, 1)
     screen_records = _reader(screen_path, 1)
     stop_records = _reader(stop_path, 1)
     attributes = _reader(attributes_path, 2)
 
     user, bad_records = load(
-        user_id, cellular_records, physical_records, screen_records,
+        user_id, call_records, text_records, physical_records, screen_records,
         stop_records, attributes, attributes_path=attributes_path,
         describe=False, warnings=warnings
     )
 
     # Loads the network
     if network is True:
-        if cellular_records is not None:
-            user.network_cellular = _read_network(
-                user, cellular_path, attributes_path, read_csv)
+        if call_records is not None:
+            user.network_call = _read_network(
+                user, call_path, attributes_path, read_csv)
+        if call_records is not None:
+            user.network_text = _read_network(
+                user, text_path, attributes_path, read_csv)
         if physical_records is not None:
             user.network_physical = _read_network(
                 user, physical_path, attributes_path, read_csv)
