@@ -26,7 +26,7 @@ def get_records(interaction_type):
     return []
 
 
-def group_records(user, interaction=None, groupby='week', part_of_week='allweek', part_of_day='allday'):
+def group_records(user, interactions=None, groupby='week', part_of_week='allweek', part_of_day='allday'):
     """
     Group records by year and week number. This function is used by the
     ``@grouping`` decorator.
@@ -60,7 +60,10 @@ def group_records(user, interaction=None, groupby='week', part_of_week='allweek'
     ## Change interaction paradigme such "callandtext" --> [['call', 'text']].
     ## -----------------------------------------------------------------------
 
-    records = flatarr([get_records(e) for e in flatarr(interaction)])
+    records = sorted(
+        flatarr([get_records(e) for e in flatarr(interactions)]),
+        key=lambda r: r.datetime
+    )
 
     if part_of_week == 'weekday':
         records = filter(lambda r: r.datetime.isoweekday() not in user.weekend, records)

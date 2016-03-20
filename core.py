@@ -138,12 +138,15 @@ class User(object):
         self.weekend = [6, 7]  # Saturday, Sunday by default
 
         self.home = None
-        self.has_text = False
-        self.has_call = False
-        self.has_physical = False
-        self.has_screen = False
-        self.has_stop = False
-        self.has_stops = False
+        self.supported_types = {
+            "text": False,
+            "call": False,
+            "physical": False,
+            "screen": False,
+            "stop": False,
+            "stops": False
+        }
+
         self.attributes = {}
         self.ignored_records = {}
 
@@ -164,7 +167,7 @@ class User(object):
         if len(self._call_records) > 0:
             self.start_time['call'] = self._call_records[0].datetime
             self.end_time['call'] = self._call_records[-1].datetime
-            self.has_call = True
+            self.supported_types['call'] = True
 
     @property
     def text_records(self):
@@ -176,7 +179,7 @@ class User(object):
         if len(self._text_records) > 0:
             self.start_time['text'] = self._text_records[0].datetime
             self.end_time['text'] = self._text_records[-1].datetime
-            self.has_text = True
+            self.supported_types['text'] = True
 
     @property
     def physical_records(self):
@@ -188,7 +191,7 @@ class User(object):
         if len(self._physical_records) > 0:
             self.start_time['physical'] = self._physical_records[0].datetime
             self.end_time['physical'] = self._physical_records[-1].datetime
-            self.has_physical = True
+            self.supported_types['physical'] = True
 
     @property
     def screen_records(self):
@@ -200,7 +203,7 @@ class User(object):
         if len(self._screen_records) > 0:
             self.start_time['screen'] = self._screen_records[0].datetime
             self.end_time['screen'] = self._screen_records[-1].datetime
-            self.has_screen = True
+            self.supported_types['screen'] = True
 
     @property
     def stop_records(self):
@@ -212,7 +215,7 @@ class User(object):
         if len(self._stop_records) > 0:
             self.start_time['stop'] = self._stop_records[0].datetime
             self.end_time['stop'] = self._stop_records[-1].datetime
-            self.has_stop = True
+            self.supported_types['stop'] = True
 
         #self.recompute_home()
 
@@ -228,7 +231,7 @@ class User(object):
     @stops.setter
     def stops(self, input_):
         self._stops = input_
-        self.has_stops = len(input_) > 0
+        self.supported_types['stops'] = len(input_) > 0
         for r in self._stop_records:
             if r.position.stop in self._stops:
                 r.position.location = self._stops[r.position.stop]
@@ -310,7 +313,7 @@ class User(object):
         else:
             print empty_box + "No contacts"
 
-        if self.has_attributes:
+        if self.supported_types['attributes']:
             print filled_box + format_int("attributes", len(self.attributes))
         else:
             print empty_box + "No attribute stored"
@@ -320,22 +323,22 @@ class User(object):
         else:
             print filled_box + format_int("stops", len(self.stops))
 
-        if self.has_home:
+        if self.supported_types['home']:
             print filled_box + "Has home"
         else:
             print empty_box + "No home"
 
-        if self.has_text:
+        if self.supported_types['text']:
             print filled_box + "Has texts"
         else:
             print empty_box + "No texts"
 
-        if self.has_call:
+        if self.supported_types['call']:
             print filled_box + "Has calls"
         else:
             print empty_box + "No calls"
 
-        if self.has_network:
+        if self.supported_types['network']:
             print filled_box + "Has network"
         else:
             print empty_box + "No network"

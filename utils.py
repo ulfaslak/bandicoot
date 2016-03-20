@@ -137,7 +137,11 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
         #bc.network.assortativity_indicators
     ]
 
-    groups = [[r for r in g] for g in group_records(user, groupby=groupby)]
+    interaction_types = [k for k,v in supported_types.iteritems() if v]
+    groups = [
+        [r for r in g] 
+        for g in group_records(user, interaction_types, groupby)
+    ]
 
     reporting = OrderedDict([
         ('attributes_path', user.attributes_path),
