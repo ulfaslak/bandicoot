@@ -185,8 +185,9 @@ def filter_record(records, interaction_type):
         sorted_min_records = sorted(set(records), key=lambda r: r.datetime)
         num_dup = len(records) - len(sorted_min_records)
         if num_dup > 0:
-            print warning_str("Warning: {0:d} duplicated record(s) were \
-                removed.".format(num_dup))
+            print warning_str(
+                "Warning: {0:d} duplicated %s record(s) were removed." \
+                .format(num_dup, interaction_type))
         return sorted_min_records
 
     ignored = OrderedDict([
