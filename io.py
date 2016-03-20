@@ -13,6 +13,38 @@ from collections import Counter
 import csv
 import os
 
+def wrap(interaction_type, subscheme):
+    """Add datetime and interaction to all subschema."""
+    filters = {
+        'datetime': lambda r: isinstance(r.datetime, datetime),
+        'interaction': lambda r: r.interaction == interaction_type
+    }
+    subscheme.update(filters)
+    return subscheme
+
+TYPE_SCHEME = {
+    'call': wrap('call', {
+        'direction': lambda r: r.direction in ['in', 'out'],
+        'correspondent_id': lambda r: r.correspondent_id is not None,
+        'duration': lambda r: isinstance(r.duration, (int, float))
+    }),
+    'text': wrap('text', {
+        'direction': lambda r: r.direction in ['in', 'out'],
+        'correspondent_id': lambda r: r.correspondent_id is not None,
+    }),
+    'physical': wrap('physical', {
+        'correspondent_id': lambda r: r.correspondent_id is not None,
+    }),
+    'screen': wrap('screen', {
+        'duration': lambda r: isinstance(r.duration, (int, float))
+    }),
+    'stop': wrap('stop', {
+        'duration': lambda r: isinstance(r.duration, (int, float)),
+        'position': lambda r: isinstance(r.position, (str)),
+        'event': lambda r: isinstance(r.event, (str))
+    })
+}
+
 
 def to_csv(objects, filename, digits=5):
     """
@@ -117,6 +149,8 @@ def _parse_record(data):
             antenna.position = float(data['latitude']), float(data['longitude'])
         return antenna
 
+    print TYPE_SCHEME[data['interaction']]
+
     return Record(interaction=data['interaction'],
                   direction=data['direction'],
                   correspondent_id=data['correspondent_id'],
@@ -155,39 +189,6 @@ def filter_record(records, interaction_type):
                 removed.".format(num_dup))
         return sorted_min_records
 
-
-    def wrap(interaction_type, subscheme):
-        """Add datetime and interaction to all subschema."""
-        filters = {
-            'datetime': lambda r: isinstance(r.datetime, datetime),
-            'interaction': lambda r: r.interaction == interaction_type
-        }
-        subscheme.update(filters)
-        return subscheme
-
-    scheme = {
-        'call': wrap('call', {
-            'direction': lambda r: r.direction in ['in', 'out'],
-            'correspondent_id': lambda r: r.correspondent_id is not None,
-            'duration': lambda r: isinstance(r.duration, (int, float))
-        }),
-        'text': wrap('text', {
-            'direction': lambda r: r.direction in ['in', 'out'],
-            'correspondent_id': lambda r: r.correspondent_id is not None,
-        }),
-        'physical': wrap('physical', {
-            'correspondent_id': lambda r: r.correspondent_id is not None,
-        }),
-        'screen': wrap('screen', {
-            'duration': lambda r: isinstance(r.duration, (int, float))
-        }),
-        'stop': wrap('stop', {
-            'duration': lambda r: isinstance(r.duration, (int, float)),
-            'position': lambda r: isinstance(r.position, (str)),
-            'event': lambda r: isinstance(r.event, (str))
-        })
-    }
-
     ignored = OrderedDict([
         ('all', 0),
         ('interaction', 0),
@@ -203,7 +204,7 @@ def filter_record(records, interaction_type):
         global removed
         for r in records:
             valid = True
-            for key, test in scheme[interaction_type].iteritems():
+            for key, test in TYPE_SCHEME[interaction_type].iteritems():
                 if not test(r):
                     ignored[key] += 1
                     bad_records.append(r)
