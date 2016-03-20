@@ -1,5 +1,5 @@
 from bandicoot_dev.helper.tools import OrderedDict, warning_str
-from bandicoot_dev.helper.group import group_records, DATE_GROUPERS, get_records
+from bandicoot_dev.helper.group import group_records, DATE_GROUPERS
 import bandicoot_dev as bc
 
 from functools import partial
