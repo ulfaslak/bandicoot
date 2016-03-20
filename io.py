@@ -204,7 +204,7 @@ def filter_record(records, interaction_type):
         global removed
         for r in records:
             valid = True
-            for key, test in scheme['interaction_type'].iteritems():
+            for key, test in scheme[interaction_type].iteritems():
                 if not test(r):
                     ignored[key] += 1
                     bad_records.append(r)
