@@ -27,21 +27,17 @@ class Record(object):
         The geographic position of the user at the time of the interaction.
     """
 
-    __slots__ = ['duration', 'correspondent_id', 'datetime', 'direction', 'interaction', 'position', 'event']
-
     def __init__(self, **kwargs):
-        for kw in self.__slots__[:]:
-            if kw in kwargs:
-                setattr(self, kw, kwargs[kw])
-            else:
-                self.__slots__.remove(kw)
+        self.parameters = kwargs.keys()
+        for kw, arg in kwargs.items():
+            setattr(self, kw, arg)
 
     def __repr__(self):
-        return "Record(" + ", ".join(map(lambda x: "%s=%r" % (x, getattr(self, x)), self.__slots__)) + ")"
+        return "Record(" + ", ".join(map(lambda x: "%s=%r" % (x, getattr(self, x)), self.parameters)) + ")"
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__) and self.__slots__ == other.__slots__:
-            return all(getattr(self, attr) == getattr(other, attr) for attr in self.__slots__)
+        if isinstance(other, self.__class__) and self.parameters == other.parameters:
+            return all(getattr(self, attr) == getattr(other, attr) for attr in self.parameters)
         return False
 
     def __hash__(self):

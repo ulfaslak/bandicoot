@@ -40,8 +40,7 @@ TYPE_SCHEME = {
     }),
     'stop': wrap('stop', {
         'duration': lambda r: isinstance(r.duration, (int, float)),
-        'position': lambda r: isinstance(r.position, (str)),
-        'event': lambda r: isinstance(r.event, (str))
+        'event': lambda r: isinstance(r.event, str)
     })
 }
 
@@ -137,7 +136,7 @@ def _parse_record(data):
     def _map_position(data):
         stop = Position()
         if 'position' in data:
-            stop.stop = data['stop_id']
+            stop.stop = data['position']
             return stop
         if 'latitude' in data and 'longitude' in data:
             stop.position = float(data['latitude']), float(data['longitude'])
@@ -192,11 +191,13 @@ def filter_record(records, interaction_type):
 
     ignored = OrderedDict([
         ('all', 0),
-        ('interaction', 0),
-        ('direction', 0),
+        ('duration', 0),
         ('correspondent_id', 0),
         ('datetime', 0),
-        ('duration', 0),
+        ('direction', 0),
+        ('interaction', 0),
+        ('position', 0),
+        ('event', 0)
     ])
 
     bad_records = []
