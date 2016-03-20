@@ -16,17 +16,7 @@ def _group_date(records, _fun):
     for _, chunk in itertools.groupby(records, key=lambda r: _fun(r.datetime)):
         yield chunk
 
-
-def get_records(interaction_type):
-    if interaction_type == "call":     return user.call_records
-    if interaction_type == "text":     return user.text_records
-    if interaction_type == "physical": return user.physical_records
-    if interaction_type == "screen":   return user.screen_records
-    if interaction_type == "stop":     return user.stop_records
-    return []
-
-
-def group_records(user, interactions=None, groupby='week', part_of_week='allweek', part_of_day='allday'):
+def group_records(user, interaction_types=None, groupby='week', part_of_week='allweek', part_of_day='allday'):
     """
     Group records by year and week number. This function is used by the
     ``@grouping`` decorator.
@@ -60,8 +50,16 @@ def group_records(user, interactions=None, groupby='week', part_of_week='allweek
     ## Change interaction paradigme such "callandtext" --> [['call', 'text']].
     ## -----------------------------------------------------------------------
 
+    def get_records(interaction_type):
+        if interaction_type == "call":     return user.call_records
+        if interaction_type == "text":     return user.text_records
+        if interaction_type == "physical": return user.physical_records
+        if interaction_type == "screen":   return user.screen_records
+        if interaction_type == "stop":     return user.stop_records
+        return []
+    
     records = sorted(
-        flatarr([get_records(e) for e in flatarr(interactions)]),
+        flatarr([get_records(i) for i in interaction_types]),
         key=lambda r: r.datetime
     )
 
