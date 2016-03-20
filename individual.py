@@ -35,11 +35,10 @@ def number_of_contacts(records, direction=None, more=0):
     more : int, optional
         Counts only contacts with more than this number of interactions. Defaults to 0.
     """
-
-    if direction is None:
-        counter = Counter(r.correspondent_id for r in records if r.duration != 0)
-    else:
-        counter = Counter(r.correspondent_id for r in records if r.duration != 0 if r.direction == direction)
+    print interaction
+    counter = Counter(
+        r.correspondent_id for r in records if r.duration != 0 if r.direction == direction
+    )
 
     return sum(1 for d in counter.values() if d > more)
 
