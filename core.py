@@ -29,13 +29,9 @@ class Record(object):
 
     __slots__ = ['interaction', 'direction', 'correspondent_id', 'datetime', 'duration', 'position']
 
-    def __init__(self, interaction, direction, correspondent_id, datetime, duration, position):
-        self.interaction = interaction
-        self.direction = direction
-        self.correspondent_id = correspondent_id
-        self.datetime = datetime
-        self.duration = duration
-        self.position = position
+    def __init__(self, **kwargs):
+        for kw, arg in kwargs.items():
+            vars(self)[kw] = arg
 
     def __repr__(self):
         return "Record(" + ", ".join(map(lambda x: "%s=%r" % (x, getattr(self, x)), self.__slots__)) + ")"
