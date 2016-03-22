@@ -11,15 +11,15 @@ DATE_GROUPERS = {
     "year": lambda d: d.year
 }
 
-def _groupby_groups(min_, max_):
+def _groupby_groups(min_, max_, _fun):
         day_each_week = range(0, (max_ - min_).days, 7)
         return sorted(
             set([_fun(min_+datetime.timedelta(days=d)) for d in day_each_week]), 
             key = lambda x: (x[0], x[1])
         )
 
-def _group_date(records, _fun):
-    for g in _groupby_groups(user.start_time['any'], user.end_time['any']):
+def _group_date(user, records, _fun):
+    for g in _groupby_groups(user.start_time['any'], user.end_time['any'], _fun):
         yield filter(lambda r: _fun(r.datetime) == g, records)
         
 
@@ -87,7 +87,7 @@ def group_records(user, interaction_types=None, groupby='week', part_of_week='al
         records = filter(night_filter, records)
     elif part_of_day is not 'allday':
         raise KeyError("{} is not a valid value for part_of_day. It should be 'day', 'night' or 'allday'.".format(part_of_day))
-    return _group_date(records, DATE_GROUPERS[groupby])
+    return _group_date(user, records, DATE_GROUPERS[groupby])
 
 
 def statistics(data, summary='default', datatype=None):
@@ -237,8 +237,6 @@ def grouping(f=None, user_kwd=False, interaction=['call', 'text'], summary='defa
                         else:
                             result = [f(g, **kwargs) if len(g) != 0 else None
                                 for g in group_records(user, i, groupby, filter_week, filter_day)]
-                        
-                        print "len(result)", len(result)
                         
                         i_label = '+'.join(i) if type(i) is list else i
                         yield filter_week, filter_day, i_label, result
