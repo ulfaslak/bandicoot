@@ -165,7 +165,7 @@ class User(object):
         self.network = {}
 
 
-    def update_time_any(startorend, t):
+    def update_time_any(self, startorend, t):
         if startorend == "start": 
             if self.start_time["any"] == None or t < self.start_time["any"]:
                 self.start_time["any"] = t
@@ -184,8 +184,8 @@ class User(object):
         if len(self._call_records) > 0:
             self.start_time['call'] = self._call_records[0].datetime
             self.end_time['call'] = self._call_records[-1].datetime
-            update_time_any("start", self.start_time['call'])
-            update_time_any("end", self.start_time['call'])
+            self.update_time_any("start", self.start_time['call'])
+            self.update_time_any("end", self.start_time['call'])
             self.supported_types['call'] = True
 
     @property
@@ -198,8 +198,8 @@ class User(object):
         if len(self._text_records) > 0:
             self.start_time['text'] = self._text_records[0].datetime
             self.end_time['text'] = self._text_records[-1].datetime
-            update_time_any("start", self.start_time['text'])
-            update_time_any("end", self.start_time['text'])
+            self.update_time_any("start", self.start_time['text'])
+            self.update_time_any("end", self.start_time['text'])
             self.supported_types['text'] = True
 
     @property
@@ -212,8 +212,8 @@ class User(object):
         if len(self._physical_records) > 0:
             self.start_time['physical'] = self._physical_records[0].datetime
             self.end_time['physical'] = self._physical_records[-1].datetime
-            update_time_any("start", self.start_time['physical'])
-            update_time_any("end", self.start_time['physical'])
+            self.update_time_any("start", self.start_time['physical'])
+            self.update_time_any("end", self.start_time['physical'])
             self.supported_types['physical'] = True
 
     @property
@@ -226,8 +226,8 @@ class User(object):
         if len(self._screen_records) > 0:
             self.start_time['screen'] = self._screen_records[0].datetime
             self.end_time['screen'] = self._screen_records[-1].datetime
-            update_time_any("start", self.start_time['screen'])
-            update_time_any("end", self.start_time['screen'])
+            self.update_time_any("start", self.start_time['screen'])
+            self.update_time_any("end", self.start_time['screen'])
             self.supported_types['screen'] = True
 
     @property
@@ -240,8 +240,8 @@ class User(object):
         if len(self._stop_records) > 0:
             self.start_time['stop'] = self._stop_records[0].datetime
             self.end_time['stop'] = self._stop_records[-1].datetime
-            update_time_any("start", self.start_time['stop'])
-            update_time_any("end", self.start_time['stop'])
+            self.update_time_any("start", self.start_time['stop'])
+            self.update_time_any("end", self.start_time['stop'])
             self.supported_types['stop'] = True
 
         #self.recompute_home()

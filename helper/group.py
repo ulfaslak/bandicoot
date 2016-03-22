@@ -11,14 +11,15 @@ DATE_GROUPERS = {
     "year": lambda d: d.year
 }
 
+def _groupby_groups(min_, max_):
+        day_each_week = range(0, (max_ - min_).days, 7)
+        return sorted(
+            set([_fun(min_+datetime.timedelta(days=d)) for d in day_each_week]), 
+            key = lambda x: (x[0], x[1])
+        )
 
 def _group_date(records, _fun):
-    def date_groups(min_, max_):
-        day_each_week = range(0, (max_ - min_).days, 7)
-        return sorted(set([_fun(min_+datetime.timedelta(days=d)) for d in day_each_week]), 
-                      key = lambda x: (x[0], x[1])
-                     )
-    for g in date_groups(user.start_time['any'], user.end_time['any']):
+    for g in _groupby_groups(user.start_time['any'], user.end_time['any']):
         yield filter(lambda r: _fun(r.datetime) == g, records)
         
 
