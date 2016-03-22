@@ -18,7 +18,7 @@ def _group_date(records, _fun):
         return sorted(set([_fun(min_+datetime.timedelta(days=d)) for d in day_each_week]), 
                       key = lambda x: (x[0], x[1])
                      )
-    for g in date_groups(records[0].datetime, records[-1].datetime):
+    for g in date_groups(user.start_time['any'], user.end_time['any']):
         yield filter(lambda r: _fun(r.datetime) == g, records)
         
 
