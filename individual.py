@@ -22,10 +22,9 @@ def interevent_time(records):
     return summary_stats(inter)
 
 
-@grouping
+@grouping(interaction=["call", "text", "physical"])
 def number_of_contacts(records, direction=None, more=0):
-    """
-    The number of contacts the user interacted with.
+    """Number of contacts the user interacted with.
 
     Parameters
     ----------
@@ -38,6 +37,7 @@ def number_of_contacts(records, direction=None, more=0):
     try:
         counter = Counter(
             r.correspondent_id for r in records
+            if r.duration < 5  # Assumption: < 5s calls doesn't count as contact
             if direction == None or r.direction == direction
         )
     except AttributeError:
@@ -49,10 +49,9 @@ def number_of_contacts(records, direction=None, more=0):
     return sum(1 for d in counter.values() if d > more)
 
 
-@grouping
+@grouping(interaction=["call", "text", "physical"])
 def entropy_of_contacts(records, normalize=False):
-    """
-    The entropy of the user's contacts.
+    """Entropy of the user's contacts.
 
     Parameters
     ----------
@@ -72,8 +71,7 @@ def entropy_of_contacts(records, normalize=False):
 
 @grouping
 def interactions_per_contact(records, direction=None):
-    """
-    The number of interactions a user had with each of its contacts.
+    """Number of interactions a user had with each of its contacts.
 
     Parameters
     ----------
@@ -91,9 +89,7 @@ def interactions_per_contact(records, direction=None):
 
 @grouping(user_kwd=True, interaction='call')
 def percent_initiated_interactions(records, user):
-    """
-    The percentage of calls initiated by the user.
-    """
+    """Percentage of calls initiated by the user."""
     records = list(records)
 
     if len(records) == 0:
@@ -105,8 +101,7 @@ def percent_initiated_interactions(records, user):
 
 @grouping(user_kwd=True)
 def percent_nocturnal(records, user):
-    """
-    The percentage of interactions the user had at night.
+    """Percentage of interactions the user had at night.
 
     By default, nights are 7pm-7am. Nightimes can be set in
     ``User.night_start`` and ``User.night_end``.
@@ -126,8 +121,7 @@ def percent_nocturnal(records, user):
 
 @grouping(interaction='call')
 def call_duration(records, direction=None):
-    """
-    The duration of the user's calls.
+    """Duration of the user's calls.
             
     Parameters
     ----------
@@ -145,8 +139,7 @@ def call_duration(records, direction=None):
 
 
 def _conversations(group, delta=datetime.timedelta(hours=1)):
-    """
-    Group texts into conversations. The function returns an iterator over records grouped by conversations.
+    """Return iterator of grouped conversations, that may end with call.
 
     See :ref:`Using bandicoot <conversations-label>` for a definition of conversations.
 
@@ -183,9 +176,7 @@ def _conversations(group, delta=datetime.timedelta(hours=1)):
 
 
 def _conversations_concluded_with_text(group, delta=datetime.timedelta(hours=1)):
-    """
-    Group texts into conversations not taking into account phone calls. The function returns an iterator over 
-    records grouped by conversations.
+    """Return iterator of grouped conversations, that may not end with call.
 
     See :ref:`Using bandicoot <conversations-label>` for a definition of conversations.
 
@@ -214,8 +205,7 @@ def _conversations_concluded_with_text(group, delta=datetime.timedelta(hours=1))
 
 @grouping(interaction='callandtext')
 def response_rate_text(records):
-    """
-    The response rate of the user (between 0 and 1).
+    """Response rate of the user (between 0 and 1).
 
     Considers text-conversations which began with an incoming text.  Response rate 
     is the fraction of such conversations in which the user sent a text (a response).  
@@ -262,8 +252,7 @@ def response_rate_text(records):
 
 @grouping(interaction='callandtext')
 def response_delay_text(records):
-    """
-    The response delay of the user within a conversations grouped by interactions (in seconds)
+    """Response delay of user in conversations grouped by interactions.
 
     The following sequence of messages defines conversations (``I`` for an
     incoming text, ``O`` for an outgoing text, ``-`` for a one minute
@@ -307,8 +296,7 @@ def response_delay_text(records):
 
 @grouping(interaction='callandtext')
 def percent_initiated_conversations(records):
-    """
-    The percentage of conversations that have been initiated by the user.
+    """Percentage of conversations that have been initiated by the user.
 
     Each call and each text conversation is weighted as a single interaction.  
 
@@ -338,8 +326,7 @@ def percent_initiated_conversations(records):
 
 @grouping(interaction='text')
 def percent_concluded_conversations(records):
-    """
-    The percentage of conversations that have been concluded by the user.
+    """Percentage of conversations that have been concluded by the user.
 
     Each text conversation is weighted as a single interaction.  
 
@@ -369,8 +356,7 @@ def percent_concluded_conversations(records):
 
 @grouping(interaction='text')
 def percent_overlap_conversations(records):
-    """
-    The percent of conversation time that overlaps with other conversations.
+    """Percent of conversation time that overlaps with other conversations.
 
     The following illustrates the concept of overlap. '-' denotes active conversation,
     '_' is idle time, and * underscores overlap. Each symbol is 1 minute.
@@ -404,12 +390,12 @@ def percent_overlap_conversations(records):
     return 1 - len(set_timestamps) / len(all_timestamps)
 
 
-@grouping(interaction='callandtext')
+@grouping(interaction='screen')
 def active_days(records):
-    """
-    The number of days during which the user was active. A user is considered
-    active if he sends a text, receives a text, initiates a call, receives a
-    call, or has a mobility point.
+    """Number of days during which the user was active. 
+    
+    A user is considered active if he sends a text, receives a text, initiates 
+    a call, receives a call, or has a mobility point.
     """
 
     days = set(r.datetime.date() for r in records)
@@ -418,9 +404,7 @@ def active_days(records):
 
 @grouping
 def percent_pareto_interactions(records, percentage=0.8):
-    """
-    The percentage of user's contacts that account for 80% of its interactions.
-    """
+    """Percentage of contacts that account for 80% of interactions."""
 
     records = list(records)
     if records == []:
@@ -440,8 +424,8 @@ def percent_pareto_interactions(records, percentage=0.8):
 
 @grouping(interaction='call')
 def percent_pareto_call_durations(records, percentage=0.8):
-    """
-    The percentage of user's contacts that account for 80% of its total time spend on the phone.
+    """Percentage of contacts that account for 80% of time spent on phone.
+    
     Optionally takes a percentage argument as a decimal (e.g., .8 for 80%).  
     """
 
@@ -464,12 +448,12 @@ def percent_pareto_call_durations(records, percentage=0.8):
     return (len(user_count) - len(user_sort)) / len(records)
 
 
-@grouping
+@grouping(interaction=["call", "text"])
 def balance_of_contacts(records, weighted=True, thresh=1):
-    """
-    The balance of interactions per contact. For every contact,
-    the balance is the number of outgoing interactions divided by the total
-    number of interactions (in+out).
+    """Balance of interactions per contact.
+    
+    For every contact, the balance is the number of outgoing interactions 
+    divided by the total number of interactions (in+out).
 
     .. math::
 
@@ -502,10 +486,9 @@ def balance_of_contacts(records, weighted=True, thresh=1):
     return summary_stats(balance)
 
 
-@grouping()
+@grouping(interaction=["call", "text", "physical"])
 def number_of_interactions(records, direction=None):
-    """
-    The number of interactions.
+    """Total number of interactions.
 
     Parameters
     ----------
@@ -521,8 +504,7 @@ def number_of_interactions(records, direction=None):
 
 @grouping()
 def percent_interactions_out(records):
-    """
-    The number of interactions.
+    """Fraction of interactions out.
 
     Parameters
     ----------

@@ -197,9 +197,19 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
 
     for fun, datatype in functions:
         try:
-            metric = fun(user, groupby=groupby, summary=summary, datatype=datatype, split_week=split_week, split_day=split_day)
+            metric = fun(
+                user, groupby=groupby, summary=summary, datatype=datatype,
+                split_week=split_week, split_day=split_day
+            )
         except ValueError:
-            metric = fun(user, groupby=groupby, datatype=datatype, split_week=split_week, split_day=split_day)
+            metric = fun(
+                user, groupby=groupby, datatype=datatype,
+                split_week=split_week, split_day=split_day
+            )
+            
+        if len(metric) < 1:
+            continue
+            
         returned[fun.__name__] = metric
 
     if network and user.has_network:

@@ -1,5 +1,5 @@
 from functools import partial
-import itertools
+import itertools, datetime
 from bandicoot_dev.helper.tools import mean, std, SummaryStats, advanced_wrap, AutoVivification, flatarr
 
 
@@ -13,8 +13,14 @@ DATE_GROUPERS = {
 
 
 def _group_date(records, _fun):
-    for _, chunk in itertools.groupby(records, key=lambda r: _fun(r.datetime)):
-        yield chunk
+    def date_groups(min_, max_):
+        day_each_week = range(0, (max_ - min_).days, 7)
+        return sorted(set([_fun(min_+datetime.timedelta(days=d)) for d in day_each_week]), 
+                      key = lambda x: (x[0], x[1])
+                     )
+    for g in date_groups(records[0].datetime, records[-1].datetime):
+        yield filter(lambda r: _fun(r.datetime) == g, records)
+        
 
 def group_records(user, interaction_types=None, groupby='week', part_of_week='allweek', part_of_day='allday'):
     """
@@ -46,9 +52,9 @@ def group_records(user, interaction_types=None, groupby='week', part_of_week='al
         * None, to use all records.
     """
 
-    ## -----------------------------------------------------------------------
-    ## Change interaction paradigme such "callandtext" --> [['call', 'text']].
-    ## -----------------------------------------------------------------------
+    ## ---------------------------------------------------------------------
+    ## Change interaction paradigme so "callandtext" --> [['call', 'text']].
+    ## ---------------------------------------------------------------------
 
     def get_records(interaction_type):
         if interaction_type == "call":     return user.call_records
@@ -56,7 +62,6 @@ def group_records(user, interaction_types=None, groupby='week', part_of_week='al
         if interaction_type == "physical": return user.physical_records
         if interaction_type == "screen":   return user.screen_records
         if interaction_type == "stop":     return user.stop_records
-        return []
 
     records = sorted(
         flatarr([get_records(i) for i in flatarr(interaction_types)]),
@@ -221,13 +226,19 @@ def grouping(f=None, user_kwd=False, interaction=['call', 'text'], summary='defa
             part_of_week, and part_of_day.
             """
             for i in interaction:
+                if sum((user.supported_types[t] for t in flatarr(i))) != len(flatarr(i)):
+                    continue
                 for filter_week in part_of_week:
                     for filter_day in part_of_day:
                         if user_kwd is True:
-                            result = [f(g, user, **kwargs) for g in group_records(user, i, groupby, filter_week, filter_day)]
+                            result = [f(g, user, **kwargs) if len(g) != 0 else None
+                                for g in group_records(user, i, groupby, filter_week, filter_day)]
                         else:
-                            result = [f(g, **kwargs) for g in group_records(user, i, groupby, filter_week, filter_day)]
-
+                            result = [f(g, **kwargs) if len(g) != 0 else None
+                                for g in group_records(user, i, groupby, filter_week, filter_day)]
+                        
+                        print "len(result)", len(result)
+                        
                         i_label = '+'.join(i) if type(i) is list else i
                         yield filter_week, filter_day, i_label, result
 
@@ -235,6 +246,8 @@ def grouping(f=None, user_kwd=False, interaction=['call', 'text'], summary='defa
         for (f_w, f_d, i_label, m) in map_filters(interaction, part_of_week, part_of_day):
             if groupby is None:
                 m = m[0] if len(m) != 0 else None
+            if len(m) == 0:
+                continue
             returned[f_w][f_d][i_label] = statistics(m, summary=summary, datatype=datatype)
 
         return returned
@@ -289,7 +302,8 @@ def spatial_grouping(f=None, user_kwd=False, summary='default', use_records=Fals
             for filter_week in part_of_week:
                 for filter_day in part_of_day:
                     if user_kwd is True:
-                        result = [f(map_records(g), user, **kwargs) for g in group_records(user, None, groupby, filter_week, filter_day)]
+                        result = [f(map_records(g), user, **kwargs) for g in 
+(user, None, groupby, filter_week, filter_day)]
                     else:
                         result = [f(map_records(g), **kwargs) for g in group_records(user, None, groupby, filter_week, filter_day)]
 

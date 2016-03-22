@@ -186,7 +186,7 @@ def filter_record(records, interaction_type):
         num_dup = len(records) - len(sorted_min_records)
         if num_dup > 0:
             print warning_str(
-                "Warning: {0:d} duplicated %s record(s) were removed." \
+                "Warning: {0:d} duplicated {1:s} record(s) were removed." \
                 .format(num_dup, interaction_type))
         return sorted_min_records
 
