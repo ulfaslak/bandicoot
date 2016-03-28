@@ -101,24 +101,23 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
     summary_type = 'distribution_summarystats' if not dist else 'summarystats'
 
     individual_functions = [
-        (bc.individual.active_days, scalar_type),
+        #(bc.individual.active_days, scalar_type),
         (bc.individual.number_of_contacts, scalar_type),
-        (bc.individual.call_duration, summary_type),
+        (bc.individual.duration, summary_type),
         (bc.individual.percent_nocturnal, scalar_type),
         (bc.individual.percent_initiated_conversations, scalar_type),
         (bc.individual.percent_concluded_conversations, scalar_type),
         (bc.individual.percent_overlap_conversations, scalar_type),
-        (bc.individual.percent_initiated_interactions, scalar_type),
-        (bc.individual.response_delay_text, summary_type),
-        (bc.individual.response_rate_text, scalar_type),
+        #(bc.individual.percent_initiated_interactions, scalar_type),
+        (bc.individual.response_delay, summary_type),
+        (bc.individual.response_rate, scalar_type),
         (bc.individual.entropy_of_contacts, scalar_type),
         (bc.individual.balance_of_contacts, summary_type),
-        (bc.individual.interactions_per_contact, summary_type),
+        #(bc.individual.interactions_per_contact, summary_type),
         (bc.individual.interevent_time, summary_type),
-        (bc.individual.percent_pareto_interactions, scalar_type),
-        (bc.individual.percent_pareto_call_durations, scalar_type),
-        (bc.individual.number_of_interactions, scalar_type),
-        (bc.individual.percent_interactions_out, scalar_type)
+        (bc.individual.percent_80percent_interactions, scalar_type),
+        (bc.individual.percent_80percent_durations, scalar_type),
+        (bc.individual.number_of_interactions, scalar_type)
     ]
     
     spatial_functions = [

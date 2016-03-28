@@ -11,7 +11,7 @@ import datetime
 from collections import defaultdict
 
 
-@grouping
+@grouping(interaction=["screen", "stop", "physical"])
 def interevent_time(records):
     """
     The interevent time between two records of the user.
@@ -49,7 +49,7 @@ def number_of_contacts(records, direction=None, more=0):
     return sum(1 for d in counter.values() if d > more)
 
 
-@grouping(interaction=["call", "text", "physical"])
+@grouping(interaction=[["call", "text"], "physical", "stop"])
 def entropy_of_contacts(records, normalize=False):
     """Entropy of the user's contacts.
 
@@ -93,15 +93,15 @@ def percent_initiated_interactions(records, user):
     records = list(records)
 
     if len(records) == 0:
-        return 0
+        return None
 
     initiated = sum(1 for r in records if r.direction == 'out')
     return float(initiated) / len(records)
 
 
-@grouping(user_kwd=True)
+@grouping(user_kwd=True, interaction=['screen', 'stop'])
 def percent_nocturnal(records, user):
-    """Percentage of interactions the user had at night.
+    """Percentage of activity at night.
 
     By default, nights are 7pm-7am. Nightimes can be set in
     ``User.night_start`` and ``User.night_end``.
@@ -109,7 +109,7 @@ def percent_nocturnal(records, user):
     records = list(records)
 
     if len(records) == 0:
-        return 0
+        return None
 
     if user.night_start < user.night_end:
         night_filter = lambda d: user.night_end > d.time() > user.night_start
@@ -119,9 +119,9 @@ def percent_nocturnal(records, user):
     return float(sum(1 for r in records if night_filter(r.datetime))) / len(records)
 
 
-@grouping(interaction='call')
-def call_duration(records, direction=None):
-    """Duration of the user's calls.
+@grouping(interaction=['call', 'stop'])
+def duration(records, direction=None):  # Consider removing direction argument
+    """Duration of the user's sessions, grouped on subject of interaction.
             
     Parameters
     ----------
@@ -130,12 +130,21 @@ def call_duration(records, direction=None):
         ``'in'`` for incoming, and ``'out'`` for outgoing.
     """
     
-    if direction is None:
-        call_durations = [r.duration for r in records if r.duration != 0]
-    else:
-        call_durations = [r.duration for r in records if r.duration != 0 and r.direction == direction]
+    interactions = defaultdict(list)
+    for r in records:
+        if r.interaction == "call":
+            interactions[r.correspondent_id].append(r)
+        else:
+            interactions[r.position].append(r)
 
-    return summary_stats(call_durations)
+
+    def _mean_duration(group):
+        durations = [r.duration for r in group]
+        return np.mean(durations)
+
+    durations = [_mean_duration(group) for group in interactions.values()]
+
+    return summary_stats(durations)
 
 
 def _conversations(group, delta=datetime.timedelta(hours=1)):
@@ -203,8 +212,28 @@ def _conversations_concluded_with_text(group, delta=datetime.timedelta(hours=1))
         yield results
 
 
-@grouping(interaction='callandtext')
-def response_rate_text(records):
+def _missed_call_actions(group, delta=datetime.timedelta(hours=1)):
+    """Return iterator over missed call actions.
+    """
+    missed = []
+    for g in group:
+
+        if g.duration == 0 and g.direction == "in":
+            missed.append(g)
+            last_time = g.datetime
+
+        if missed:
+            if g.direction == "out" and g.datetime - last_time < delta:
+                yield missed + [g]
+                missed = []
+
+    if len(missed) != 0:
+        yield missed
+
+
+
+@grouping(interaction='text')
+def response_rate(records):
     """Response rate of the user (between 0 and 1).
 
     Considers text-conversations which began with an incoming text.  Response rate 
@@ -230,7 +259,8 @@ def response_rate_text(records):
 
     def _response_rate(grouped):
         received, responded = 0, 0
-        conversations = _conversations(grouped)
+        conversations = _conversations_concluded_with_text(grouped)
+
 
         for conv in conversations:
             if len(conv) != 0:
@@ -250,9 +280,11 @@ def response_rate_text(records):
     return float(responded) / received if received != 0 else 0
 
 
-@grouping(interaction='callandtext')
-def response_delay_text(records):
+@grouping(interaction='text')
+def response_delay(records):
     """Response delay of user in conversations grouped by interactions.
+
+    Must also use call in order to seperate conversations.
 
     The following sequence of messages defines conversations (``I`` for an
     incoming text, ``O`` for an outgoing text, ``-`` for a one minute
@@ -277,16 +309,17 @@ def response_delay_text(records):
     for r in records:
         interactions[r.correspondent_id].append(r)
 
-    def _response_delay(grouped):
+    def _mean_response_delay(grouped):
         ts = ((b.datetime - a.datetime).total_seconds()
-              for conv in _conversations(grouped)
+              for conv in _conversations_concluded_with_text(grouped)
               for a, b in pairwise(conv)
               if b.direction == 'out' and a.direction == 'in')
+        return np.mean(list(ts))
 
-        return [np.mean(list(ts))]
-
-    delays = [r for i in interactions.values() for r in _response_delay(i)
-              if r > 0]
+    delays = filter(
+        lambda x: x > 0,
+        [_mean_response_delay(group) for group in interactions.values()]
+    )
 
     if delays == []:
         return None
@@ -385,7 +418,7 @@ def percent_overlap_conversations(records):
     
     set_timestamps = set(all_timestamps)
     if len(all_timestamps) == 0:
-        return 0
+        return None
 
     return 1 - len(set_timestamps) / len(all_timestamps)
 
@@ -402,13 +435,13 @@ def active_days(records):
     return len(days)
 
 
-@grouping
-def percent_pareto_interactions(records, percentage=0.8):
-    """Percentage of contacts that account for 80% of interactions."""
+@grouping(interaction=['text', 'call', 'physical'])
+def percent_80percent_interactions(records, percentage=0.8):
+    """Percentage of contacts that account for 80%% of interactions."""
 
     records = list(records)
     if records == []:
-        return 0.
+        return None
 
     user_count = Counter(r.correspondent_id for r in records)
 
@@ -422,16 +455,16 @@ def percent_pareto_interactions(records, percentage=0.8):
     return (len(user_count) - len(user_sort)) / len(records)
 
 
-@grouping(interaction='call')
-def percent_pareto_call_durations(records, percentage=0.8):
-    """Percentage of contacts that account for 80% of time spent on phone.
+@grouping(interaction=['call', 'screen', 'stop'])
+def percent_80percent_durations(records, percentage=0.8):
+    """Percentage of contacts that account for 80%% of time spent on phone.
     
-    Optionally takes a percentage argument as a decimal (e.g., .8 for 80%).  
+    Optionally takes a percentage argument as a decimal (e.g., .8 for 80%%).  
     """
 
     records = list(records)
     if records == []:
-        return 0.
+        return None
 
     user_count = defaultdict(int)
     for r in records:
@@ -449,9 +482,9 @@ def percent_pareto_call_durations(records, percentage=0.8):
 
 
 @grouping(interaction=["call", "text"])
-def balance_of_contacts(records, weighted=True, thresh=1):
+def balance_of_contacts(records, weighted=False, thresh=1):
     """Balance of interactions per contact.
-    
+
     For every contact, the balance is the number of outgoing interactions 
     divided by the total number of interactions (in+out).
 
@@ -473,10 +506,10 @@ def balance_of_contacts(records, weighted=True, thresh=1):
         if r.direction == 'out':
             counter_out[r.correspondent_id] += 1
         counter[r.correspondent_id] += 1
-    
+
     if r.interaction == 'text':
-        counter_out = dict((k,v) for k,v in counter_out.items() if v > thresh)
-        counter = dict((k,counter[k]) for k,v in counter_out.items() if v > thresh)
+        counter_out = dict((k, v) for k, v in counter_out.items() if v > thresh)
+        counter = dict((k, counter[k]) for k, v in counter_out.items() if v > thresh)
 
     if not weighted:
         balance = [float(counter_out[c]) / float(counter[c]) for c in counter]
@@ -500,25 +533,4 @@ def number_of_interactions(records, direction=None):
         return len([r for r in records])
     else:
         return len([r for r in records if r.direction == direction])
-
-
-@grouping()
-def percent_interactions_out(records):
-    """Fraction of interactions out.
-
-    Parameters
-    ----------
-    direction : str, optional
-        Filters the records by their direction: ``None`` for all records,
-        ``'in'`` for incoming, and ``'out'`` for outgoing.
-    """
-    counter_out = 0
-    counter = 0
-    
-    for r in records:
-        if r.direction == 'out':
-            counter_out += 1
-        counter += 1
-        
-    return counter_out / counter
 
