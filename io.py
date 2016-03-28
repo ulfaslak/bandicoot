@@ -40,7 +40,8 @@ TYPE_SCHEME = {
     }),
     'stop': wrap('stop', {
         'duration': lambda r: isinstance(r.duration, (int, float)),
-        'event': lambda r: isinstance(r.event, str)
+        'event': lambda r: isinstance(r.event, str),
+        'position': lambda r: isinstance(r.position, str)
     })
 }
 
