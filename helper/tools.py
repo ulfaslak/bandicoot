@@ -285,7 +285,7 @@ def summary_stats(data):
     """
 
     if len(data) < 1:
-        return SummaryStats(0., 0., 0., 0., 0., 0., 0., [])
+        return SummaryStats(None, None, None, None, None, None, None, [])
 
     data.sort()
     _median = median(data)
@@ -305,14 +305,16 @@ def entropy(data):
     """
     Compute the Shannon entropy, a measure of uncertainty.
     """
-
     if len(data) == 0:
         return None
-
-    n = sum(data)
-
     _op = lambda f: f * math.log(f)
-    return - sum(_op(float(i) / n) for i in data)
+    return - sum(_op(float(i) / sum(data)) for i in data)
+
+
+def time_correlated_entropy(walk):
+    counter = Counter(zip(walk[:-1], walk[1:]))
+    P = np.array(counter.values(), float) / np.sum(counter.values())
+    return - sum(P * np.log2(P))
 
 
 def great_circle_distance(pt1, pt2):

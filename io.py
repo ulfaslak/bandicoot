@@ -40,7 +40,8 @@ TYPE_SCHEME = {
     }),
     'stop': wrap('stop', {
         'duration': lambda r: isinstance(r.duration, (int, float)),
-        'event': lambda r: isinstance(r.event, str)
+        'event': lambda r: isinstance(r.event, str),
+        'position': lambda r: isinstance(r.position, str)
     })
 }
 
@@ -154,7 +155,7 @@ def _parse_record(data):
         if kw=="interaction":
             return data['interaction']
         if kw=="position":
-            return _map_position(data)
+            return data['position']
         if kw=="event":
             return data['event']
     

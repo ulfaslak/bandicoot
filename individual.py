@@ -11,7 +11,7 @@ import datetime
 from collections import defaultdict
 
 
-@grouping(interaction=["screen", "stop", "physical"])
+@grouping(interaction=["screen", "stop"])
 def interevent_time(records):
     """
     The interevent time between two records of the user.
@@ -22,7 +22,7 @@ def interevent_time(records):
     return summary_stats(inter)
 
 
-@grouping(interaction=["call", "text", "physical"])
+@grouping(interaction=[["call", "text"], "physical"])
 def number_of_contacts(records, direction=None, more=0):
     """Number of contacts the user interacted with.
 
@@ -34,35 +34,53 @@ def number_of_contacts(records, direction=None, more=0):
     more : int, optional
         Counts only contacts with more than this number of interactions. Defaults to 0.
     """
-    try:
-        counter = Counter(
-            r.correspondent_id for r in records
-            if r.duration < 5  # Assumption: < 5s calls doesn't count as contact
-            if direction == None or r.direction == direction
-        )
-    except AttributeError:
-        counter = Counter(
-            r.correspondent_id for r in records
-            if direction == None or r.direction == direction
-        )
+    counter = Counter(
+        r.correspondent_id for r in records
+        if (hasattr(r, 'duration') and r.duration < 5)  # Assumption: < 5s calls doesn't count as contact
+        if direction == None or (hasattr(r, 'direction') and r.direction == direction)
+    )
 
     return sum(1 for d in counter.values() if d > more)
 
 
-@grouping(interaction=[["call", "text"], "physical", "stop"])
-def entropy_of_contacts(records, normalize=False):
-    """Entropy of the user's contacts.
+@grouping(interaction=[["call", "text"], "physical"])
+def entropy_time_uncorrelated(records, normalize=False):
+    """Entropy of the user's contacts. Time uncorrelated.
 
     Parameters
     ----------
     normalize: boolean, default is False
         Returns a normalized entropy between 0 and 1.
-
     """
-    counter = Counter(r.correspondent_id for r in records)
+    try:
+        counter = Counter(r.correspondent_id for r in records)
+    except AttributeError:
+        counter = Counter(r.position for r in records)
 
     raw_entropy = entropy(counter.values())
     n = len(counter)
+    if normalize and n > 1:
+        return raw_entropy / math.log(n)
+    else:
+        return raw_entropy
+    
+    
+@grouping(interaction="stop")
+def entropy_time_correlated(records, normalize=False):
+    """Entropy of the user's contacts. Time correlated.
+
+    Parameters
+    ----------
+    normalize: boolean, default is False
+        Returns a normalized entropy between 0 and 1.
+    """
+    try:
+        states = [r.position for r in records]
+    except AttributeError:
+        states = [r.correspondent_id for r in records]
+
+    raw_entropy = time_correlated_entropy(states)
+    n = len(set(states))
     if normalize and n > 1:
         return raw_entropy / math.log(n)
     else:
@@ -119,7 +137,7 @@ def percent_nocturnal(records, user):
     return float(sum(1 for r in records if night_filter(r.datetime))) / len(records)
 
 
-@grouping(interaction=['call', 'stop'])
+@grouping(interaction=['call'])
 def duration(records, direction=None):  # Consider removing direction argument
     """Duration of the user's sessions, grouped on subject of interaction.
             
@@ -144,7 +162,7 @@ def duration(records, direction=None):  # Consider removing direction argument
 
     durations = [_mean_duration(group) for group in interactions.values()]
 
-    return summary_stats(durations)
+    return np.mean(durations)
 
 
 def _conversations(group, delta=datetime.timedelta(hours=1)):
@@ -435,7 +453,7 @@ def active_days(records):
     return len(days)
 
 
-@grouping(interaction=['text', 'call', 'physical'])
+@grouping(interaction=[['text', 'call'], 'physical'])
 def percent_80percent_interactions(records, percentage=0.8):
     """Percentage of contacts that account for 80%% of interactions."""
 

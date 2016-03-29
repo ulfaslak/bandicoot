@@ -103,7 +103,7 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
     individual_functions = [
         #(bc.individual.active_days, scalar_type),
         (bc.individual.number_of_contacts, scalar_type),
-        (bc.individual.duration, summary_type),
+        (bc.individual.duration, scalar_type),
         (bc.individual.percent_nocturnal, scalar_type),
         (bc.individual.percent_initiated_conversations, scalar_type),
         (bc.individual.percent_concluded_conversations, scalar_type),
@@ -111,7 +111,8 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
         #(bc.individual.percent_initiated_interactions, scalar_type),
         (bc.individual.response_delay, summary_type),
         (bc.individual.response_rate, scalar_type),
-        (bc.individual.entropy_of_contacts, scalar_type),
+        (bc.individual.entropy_time_uncorrelated, scalar_type),
+        (bc.individual.entropy_time_correlated, scalar_type),
         (bc.individual.balance_of_contacts, summary_type),
         #(bc.individual.interactions_per_contact, summary_type),
         (bc.individual.interevent_time, summary_type),
