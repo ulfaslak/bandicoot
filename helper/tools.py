@@ -1,8 +1,9 @@
-from collections import OrderedDict as NativeOrderedDict
+from collections import OrderedDict as NativeOrderedDict, Counter
 from functools import update_wrapper
 import itertools
 import inspect
 import math
+import numpy as np
 import json
 
 try:
@@ -355,3 +356,23 @@ def flatarr(arr):
 
     flatten = lambda l: [item for sublist in l for item in sublist]
     return flatten([e if type(e) is list else [e] for e in arr])
+
+
+class Inc_avg(object):
+    """Object for computing average incrementally. Functionally similar to Counter objects."""
+    def __init__(self):
+        self.mean = 0
+        self.length = 0
+        
+    def update(self, num):
+        try:
+            num = [float(n) for n in num]
+        except TypeError:
+            num = [float(num)]
+        
+        self.mean = (self.mean * self.length + sum(num)) \
+                    / (self.length + len(num))
+        self.length += len(num)
+        return self
+        
+ 

@@ -1,8 +1,9 @@
-from bandicoot_dev.helper.tools import OrderedDict, warning_str
+from bandicoot_dev.helper.tools import OrderedDict, warning_str, Inc_avg
 from bandicoot_dev.helper.group import group_records, DATE_GROUPERS
 import bandicoot_dev as bc
 
 from functools import partial
+from datetime import datetime as dt
 
 
 def flatten(d, parent_key='', separator='__'):
@@ -195,7 +196,9 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
     else:
         functions = individual_functions
 
+    fun_times = dict()
     for fun, datatype in functions:
+        start = dt.now()
         try:
             metric = fun(
                 user, groupby=groupby, summary=summary, datatype=datatype,
@@ -209,8 +212,14 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
             
         if len(metric) < 1:
             continue
-            
+        
+        indicator_time = (dt.now() - start).microseconds * 1e-6
+
+        fun_times[fun.__name__] = indicator_time
         returned[fun.__name__] = metric
+    
+    for n, t in sorted(fun_times.items(), key=lambda x: x[1])[-5:]:
+        print warning_str("%s is slow - time: %.2f" % (n, t))
 
     if network and user.has_network:
         for fun in network_functions:

@@ -2,7 +2,7 @@ from __future__ import division
 
 
 from bandicoot_dev.helper.group import grouping
-from bandicoot_dev.helper.tools import summary_stats, entropy, pairwise
+from bandicoot_dev.helper.tools import summary_stats, entropy, time_correlated_entropy, pairwise
 from collections import Counter
 
 import math
@@ -36,7 +36,8 @@ def number_of_contacts(records, direction=None, more=0):
     """
     counter = Counter(
         r.correspondent_id for r in records
-        if (hasattr(r, 'duration') and r.duration < 5)  # Assumption: < 5s calls doesn't count as contact
+        if not hasattr(r, 'duration') or 
+            (hasattr(r, 'duration') and r.duration < 5)  # Assumption: < 5s calls doesn't count as contact
         if direction == None or (hasattr(r, 'direction') and r.direction == direction)
     )
 
@@ -473,7 +474,7 @@ def percent_80percent_interactions(records, percentage=0.8):
     return (len(user_count) - len(user_sort)) / len(records)
 
 
-@grouping(interaction=['call', 'screen', 'stop'])
+@grouping(interaction=['call', 'stop'])
 def percent_80percent_durations(records, percentage=0.8):
     """Percentage of contacts that account for 80%% of time spent on phone.
     
@@ -486,8 +487,12 @@ def percent_80percent_durations(records, percentage=0.8):
 
     user_count = defaultdict(int)
     for r in records:
-        if r.interaction == "call":
+        if hasattr(r, "correspondent_id"):
             user_count[r.correspondent_id] += r.duration
+        if hasattr(r, "position"):
+            user_count[r.position] += r.duration
+        else:
+            user_count[r.datetime.strftime("%s")] += r.duration
 
     target = int(math.ceil(sum(user_count.values()) * percentage))
     user_sort = sorted(user_count.keys(), key=lambda x: user_count[x])
