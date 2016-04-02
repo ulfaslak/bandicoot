@@ -2,7 +2,7 @@ from __future__ import division
 
 
 from bandicoot_dev.helper.group import grouping
-from bandicoot_dev.helper.tools import summary_stats, entropy, time_correlated_entropy, pairwise
+from bandicoot_dev.helper.tools import summary_stats, entropy, pairwise
 from collections import Counter
 
 import math
@@ -38,9 +38,9 @@ def number_of_contacts(records, direction=None, more=1):
     
     if hasattr(records[0], 'correspondent_id'):
         counter = Counter(
-            r.correspondent_id for r in records 
-            if direction in [None, r.direction]
-            and if hasattr(r, 'duration') and r.duration > 5
+            r.correspondent_id for r in records
+            if (hasattr(r, 'duration') and r.duration > 5)
+            or not hasattr(r, 'duration')
         )
     else:
         counter = Counter(
@@ -73,7 +73,7 @@ def entropy_per_contacts(records, normalize=True):
 
 
 @grouping(interaction=["call", "text", "physical", "stop"])
-def interactions_per_contact(records, direction=None):
+def interactions_per_contact(records):
     """Number of interactions a user had with each of its contacts.
 
     Parameters
@@ -82,21 +82,13 @@ def interactions_per_contact(records, direction=None):
         Filters the records by their direction: ``None`` for all records,
         ``'in'`` for incoming, and ``'out'`` for outgoing.
     """
+    
+    try:
+        contacts = [r.correspondent_id for r in records]
+    except AttributeError:
+        contacts = [r.position for r in records]
 
-    records = list(records)
-
-    if hasattr(records[0], 'correspondent_id'):
-        counter = Counter(
-            r.correspondent_id for r in records
-            if direction in [None, r.direction]
-            and if hasattr(r, 'duration') and r.duration > 5
-        )
-    else:
-        counter = Counter(
-            r.position for r in records
-        )
-
-    return np.mean(counter.values())
+    return len(set(contacts)) * 1.0 / len(contacts)
 
 
 @grouping(user_kwd=True, interaction=['screen', 'stop'])
@@ -285,12 +277,15 @@ def response_rate(records):
                     received += 1
                     if any((i.direction == 'out' for i in conv)):
                         responded += 1
-
+        
+        if received == 0:
+            return None
+        
         return responded * 1.0 / received
 
     # Group all records by their correspondent, and compute the response rate
     # for each
-    rrates = map(_response_rate, interactions.values())
+    rrates = filter(lambda v: v != None, map(_response_rate, interactions.values()))
 
     return summary_stats(rrates)
 
@@ -455,16 +450,16 @@ def overlap_screen_physical(records):
         to_ts = lambda dt: int(dt.strftime("%s"))
         return to_ts(r.datetime), to_ts(r.datetime) + r.duration
 
-    timestamps_physical = [
+    timestamps_screen = [
         ts 
-        for i in interactions.values()
-        for ts in xrange(*_timespans_physical(i))
+        for r in records if r.interaction == "screen"
+        for ts in xrange(*_timespans_screen(r))
     ]
 
-    timestamps_screen = [
+    timestamps_physical = [
         ts
-        for r in records if r.interaction == "screen"
-        for a, b in _timespans_screen(r)
+        for i in interactions.values()
+        for a, b in _timespans_physical(i)
         for ts in xrange(a, b)
     ]
     
@@ -473,7 +468,7 @@ def overlap_screen_physical(records):
 
     timestamps_overlap = set(timestamps_screen) & set(timestamps_physical)
 
-    return (1 - len(timestamps_overlap) / len(timestamps)) / len(interactions)
+    return (1 - len(timestamps_overlap) / len(timestamps_physical)) / len(interactions)
 
 
 @grouping(interaction='screen')
