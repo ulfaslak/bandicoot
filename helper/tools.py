@@ -308,14 +308,8 @@ def entropy(data):
     """
     if len(data) == 0:
         return None
-    _op = lambda f: f * math.log(f)
+    _op = lambda f: f * np.log2(f)
     return - sum(_op(float(i) / sum(data)) for i in data)
-
-
-def time_correlated_entropy(walk):
-    counter = Counter(zip(walk[:-1], walk[1:]))
-    P = np.array(counter.values(), float) / np.sum(counter.values())
-    return - sum(P * np.log2(P))
 
 
 def great_circle_distance(pt1, pt2):

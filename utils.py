@@ -108,17 +108,15 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
         (bc.individual.percent_nocturnal, scalar_type),
         (bc.individual.percent_initiated_conversations, scalar_type),
         (bc.individual.percent_concluded_conversations, scalar_type),
-        (bc.individual.percent_overlap_conversations, scalar_type),
-        #(bc.individual.percent_initiated_interactions, scalar_type),
+        (bc.individual.overlap_conversations_per_contacts, scalar_type),
         (bc.individual.response_delay, summary_type),
         (bc.individual.response_rate, scalar_type),
-        (bc.individual.entropy_time_uncorrelated, scalar_type),
-        (bc.individual.entropy_time_correlated, scalar_type),
-        (bc.individual.balance_of_contacts, summary_type),
-        #(bc.individual.interactions_per_contact, summary_type),
+        (bc.individual.entropy_per_contacts, scalar_type),
+        (bc.individual.balance_of_interactions, summary_type),
+        (bc.individual.interactions_per_contact, scalar_type),
         (bc.individual.interevent_time, summary_type),
-        (bc.individual.percent_80percent_interactions, scalar_type),
-        (bc.individual.percent_80percent_durations, scalar_type),
+        (bc.individual.percent_ei_percent_interactions, scalar_type),
+        (bc.individual.percent_ei_percent_durations, scalar_type),
         (bc.individual.number_of_interactions, scalar_type)
     ]
     
