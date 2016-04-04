@@ -443,7 +443,7 @@ def overlap_screen_physical(records):
     def _timespans_physical(grouped):
         to_ts = lambda dt: int(dt.strftime("%s"))
         ts = [(to_ts(conv[0].datetime), to_ts(conv[-1].datetime))
-              for conv in _conversations_ext(grouped)]
+              for conv in _conversations_ext(grouped, datetime.timedelta(hours=1.0/12))]
         return ts
 
     def _timespans_screen(r):
