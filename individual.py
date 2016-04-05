@@ -50,6 +50,7 @@ def number_of_contacts(records, direction=None, more=1):
     return sum(1 for d in counter.values() if d > more)
 
 
+
 @grouping(interaction=["call", "text", "physical", "stop"])
 def entropy_per_contacts(records, normalize=True):
     """Entropy of the user's contacts. Time uncorrelated.
@@ -218,26 +219,6 @@ def _conversations_ext(group, delta=datetime.timedelta(hours=1)):
 
     if len(results) != 0:
         yield results
-
-
-def _missed_call_actions(group, delta=datetime.timedelta(hours=1)):
-    """Return iterator over missed call actions.
-    """
-    missed = []
-    for g in group:
-
-        if g.duration == 0 and g.direction == "in":
-            missed.append(g)
-            last_time = g.datetime
-
-        if missed:
-            if g.direction == "out" and g.datetime - last_time < delta:
-                yield missed + [g]
-                missed = []
-
-    if len(missed) != 0:
-        yield missed
-
 
 
 @grouping(interaction='callandtext')
@@ -580,3 +561,81 @@ def number_of_interactions(records, direction=None):
     else:
         return len([r for r in records if r.direction == direction])
 
+
+## ----------------- ##
+## SPECIAL FUNCTIONS ##
+## ----------------- ##
+
+@grouping(interaction="physicalandstop")
+def percent_of_contacts_not_from_campus(records, more=1):
+    """Percent of contacts the user interacted with not interacted with on campus.
+
+    NB: Any interaction type must be used in concatenation with stop
+    """
+    contacts_campus = set()
+    contacts = set()
+    endtime = dt.fromtimestamp(0)
+    for r in records:
+        if r.interaction == "stop":
+            endtime = r.datetime + datetime.timedelta(0,r.duration)
+        if r.interaction != "stop":
+            if r.datetime < endtime:
+                contacts_campus.add(r.correspondent_id)
+            contacts.add(r.correspondent_id)
+
+    return len(contacts_campus) * 1.0 / len(contacts)
+
+
+
+@grouping(interaction="stop")
+def percent_at_campus(records, more=1):
+    """Commulative time spent at campus.
+
+    NB: Only accepts stop.
+    """
+    counter_campus = 0
+    counter = 0
+    for r in records:
+        if r.event == "campus":
+            counter_campus += r.duration
+        counter += r.duration
+
+    return counter_campus * 1.0 / counter
+
+    return counter
+
+
+@grouping(interaction="stop")
+def percent_at_home(records, more=1):
+    """Commulative time spent at campus.
+
+    NB: Only accepts stop.
+    """
+    counter_campus = 0
+    counter = 0
+    for r in records:
+        if r.event == "home":
+            counter_campus += r.duration
+        counter += r.duration
+
+    return counter_campus * 1.0 / counter
+
+    return counter
+
+
+@grouping(interaction="stop")
+def percent_at_friday_bar(records, more=1):
+    """Commulative time spent at campus.
+
+    NB: Only accepts stop.
+    """
+    counter_campus = 0
+    counter = 0
+    for r in records:
+        if r.event == "friday_bar":
+            counter_campus += r.duration
+        counter += r.duration
+
+    return counter_campus * 1.0 / counter
+
+    return counter
