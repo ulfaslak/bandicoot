@@ -3,12 +3,11 @@ from __future__ import division
 
 from bandicoot_dev.helper.group import grouping
 from bandicoot_dev.helper.tools import summary_stats, entropy, pairwise
-from collections import Counter
+from collections import Counter, defaultdict
 
 import math
 import numpy as np
 import datetime
-from collections import defaultdict
 
 
 @grouping(interaction=["screen"])
@@ -20,7 +19,6 @@ def interevent_time(records):
     inter = [(new - old).total_seconds() for old, new in inter_events]
 
     return np.mean(inter)
-
 
 @grouping(interaction=["call", "text", "physical", "stop"])
 def number_of_contacts(records, direction=None, more=1):
@@ -49,7 +47,20 @@ def number_of_contacts(records, direction=None, more=1):
 
     return sum(1 for d in counter.values() if d > more)
 
+@grouping(interaction=["call", "text", "physical", 'stop'])
+def number_of_interactions(records, direction=None):
+    """Total number of interactions.
 
+    Parameters
+    ----------
+    direction : str, optional
+        Filters the records by their direction: ``None`` for all records,
+        ``'in'`` for incoming, and ``'out'`` for outgoing.
+    """
+    if direction is None:
+        return len([r for r in records])
+    else:
+        return len([r for r in records if r.direction == direction])
 
 @grouping(interaction=["call", "text", "physical", "stop"])
 def entropy_per_contacts(records, normalize=True):
@@ -72,7 +83,6 @@ def entropy_per_contacts(records, normalize=True):
     else:
         return raw_entropy
 
-
 @grouping(interaction=["call", "text", "physical", "stop"])
 def interactions_per_contact(records):
     """Number of interactions a user had with each of its contacts.
@@ -91,8 +101,7 @@ def interactions_per_contact(records):
 
     return len(set(contacts)) * 1.0 / len(contacts)
 
-
-@grouping(user_kwd=True, interaction=['screen', 'stop'])
+@grouping(user_kwd=True, interaction=['screen', 'stop', 'physical'])
 def percent_nocturnal(records, user):
     """Percentage of activity at night.
 
@@ -110,7 +119,6 @@ def percent_nocturnal(records, user):
         night_filter = lambda d: not(user.night_end < d.time() < user.night_start)
 
     return float(sum(1 for r in records if night_filter(r.datetime))) / len(records)
-
 
 @grouping(interaction=['call', 'text', 'physical', 'screen', 'stop'])
 def duration(records, direction=None):  # Consider removing direction argument
@@ -155,7 +163,6 @@ def duration(records, direction=None):  # Consider removing direction argument
 
     return np.mean(durations)
 
-
 def _conversations(group, delta=datetime.timedelta(hours=1)):
     """Return iterator of grouped conversations.
 
@@ -192,7 +199,6 @@ def _conversations(group, delta=datetime.timedelta(hours=1)):
     if len(results) != 0:
         yield results
 
-
 def _conversations_ext(group, delta=datetime.timedelta(hours=1)):
     """Return iterator of grouped conversations.
 
@@ -219,7 +225,6 @@ def _conversations_ext(group, delta=datetime.timedelta(hours=1)):
 
     if len(results) != 0:
         yield results
-
 
 @grouping(interaction='callandtext')
 def response_rate(records):
@@ -270,7 +275,6 @@ def response_rate(records):
 
     return summary_stats(rrates)
 
-
 @grouping(interaction=['text', 'call'])
 def response_delay(records):
     """Response delay of user in conversations grouped by interactions.
@@ -314,7 +318,6 @@ def response_delay(records):
 
     return summary_stats(delays)
 
-
 @grouping(interaction='callandtext')
 def percent_initiated_conversations(records):
     """Percentage of conversations that have been initiated by the user.
@@ -338,7 +341,6 @@ def percent_initiated_conversations(records):
 
     return summary_stats(all_couples)
 
-
 @grouping(interaction='callandtext')
 def percent_concluded_conversations(records):
     """Percentage of conversations that have been concluded by the user.
@@ -361,7 +363,6 @@ def percent_concluded_conversations(records):
     all_couples = [_percent_initiated(i) for i in interactions.values()]
 
     return summary_stats(all_couples)
-
 
 @grouping(interaction=['text', 'physical'])
 def overlap_conversations_per_contacts(records):
@@ -399,7 +400,6 @@ def overlap_conversations_per_contacts(records):
         return None
 
     return (1 - len(set(timestamps)) / len(timestamps)) / len(interactions)
-
 
 @grouping(interaction='screenandphysical')
 def overlap_screen_physical(records):
@@ -451,7 +451,6 @@ def overlap_screen_physical(records):
 
     return (1 - len(timestamps_overlap) / len(timestamps_physical)) / len(interactions)
 
-
 @grouping(interaction='screen')
 def active_days(records):
     """Number of days during which the user was active. 
@@ -462,7 +461,6 @@ def active_days(records):
 
     days = set(r.datetime.date() for r in records)
     return len(days)
-
 
 @grouping(interaction=['text', 'physical'])
 def percent_ei_percent_interactions(records, percentage=0.8):
@@ -485,7 +483,6 @@ def percent_ei_percent_interactions(records, percentage=0.8):
         target -= user_count[user_id]
 
     return (len(user_count) - len(user_sort)) / len(records)
-
 
 @grouping(interaction=['call', 'stop'])
 def percent_ei_percent_durations(records, percentage=0.8):
@@ -516,7 +513,6 @@ def percent_ei_percent_durations(records, percentage=0.8):
 
     return (len(user_count) - len(user_sort)) / len(records)
 
-
 @grouping(interaction=["call", "text"])
 def balance_of_interactions(records, weighted=False, thresh=1):
     """Balance of out/(in+out) interactions.
@@ -546,49 +542,96 @@ def balance_of_interactions(records, weighted=False, thresh=1):
     return counter_out * 1.0 / counter
 
 
-@grouping(interaction=["call", "text", "physical"])
-def number_of_interactions(records, direction=None):
-    """Total number of interactions.
-
-    Parameters
-    ----------
-    direction : str, optional
-        Filters the records by their direction: ``None`` for all records,
-        ``'in'`` for incoming, and ``'out'`` for outgoing.
-    """
-    if direction is None:
-        return len([r for r in records])
-    else:
-        return len([r for r in records if r.direction == direction])
-
-
 ## ----------------- ##
 ## SPECIAL FUNCTIONS ##
 ## ----------------- ##
 
 @grouping(interaction="physicalandstop")
-def percent_of_contacts_not_from_campus(records, more=1):
-    """Percent of contacts the user interacted with not interacted with on campus.
+def percent_interactions_campus(records):
+    """Percent of interactions outside of campus that are from campus.
+
+    NB: Any interaction type must be used in concatenation with stop
+    """
+    interactions_place = 0
+    interactions = 0
+    endtime = dt.fromtimestamp(0)
+    for r in records:
+        if r.interaction == "stop":
+            loc = r.event
+            endtime = r.datetime + datetime.timedelta(0,r.duration)
+        if r.interaction != "stop" and r.datetime < endtime:
+            if loc == "campus":
+                interactions_place += 1
+            interactions += 1
+
+    return interactions_place * 1.0 / interactions
+
+@grouping(interaction="physicalandstop")
+def percent_interactions_home(records):
+    """Percent of interactions outside of campus that are from campus.
+
+    NB: Any interaction type must be used in concatenation with stop
+    """
+    interactions_place = 0
+    interactions = 0
+    endtime = dt.fromtimestamp(0)
+    for r in records:
+        if r.interaction == "stop":
+            loc = r.event
+            endtime = r.datetime + datetime.timedelta(0,r.duration)
+        if r.interaction != "stop" and r.datetime < endtime:
+            if loc == "home":
+                interactions_place += 1
+            interactions += 1
+
+    return interactions_place * 1.0 / interactions
+
+@grouping(interaction="physicalandstop")
+def percent_interactions_other(records):
+    """Percent of interactions outside of campus that are from campus.
+
+    NB: Any interaction type must be used in concatenation with stop
+    """
+    interactions_place = 0
+    interactions = 0
+    endtime = dt.fromtimestamp(0)
+    for r in records:
+        if r.interaction == "stop":
+            loc = r.event
+            endtime = r.datetime + datetime.timedelta(0,r.duration)
+        if r.interaction != "stop" and r.datetime < endtime:
+            if loc == "other":
+                interactions_place += 1
+            interactions += 1
+
+    return interactions_place * 1.0 / interactions
+
+@grouping(interaction="physicalandstop")
+def percent_outside_campus_from_campus(records):
+    """Percent of interactions outside of campus that are from campus.
 
     NB: Any interaction type must be used in concatenation with stop
     """
     contacts_campus = set()
-    contacts = set()
+    contacts_other = set()
     endtime = dt.fromtimestamp(0)
     for r in records:
         if r.interaction == "stop":
+            loc = r.event
             endtime = r.datetime + datetime.timedelta(0,r.duration)
-        if r.interaction != "stop":
-            if r.datetime < endtime:
+        if r.interaction != "stop" and r.datetime < endtime:
+            if loc == "campus":
                 contacts_campus.add(r.correspondent_id)
-            contacts.add(r.correspondent_id)
+            if loc == "other":
+                contacts_other.add(r.correspondent_id)
 
-    return len(contacts_campus) * 1.0 / len(contacts)
+    if len(contacts_other) == 0:
+        return 1.0
 
-
+    return len(contacts_campus & contacts_other) * 1.0 / len(contacts_other)
 
 @grouping(interaction="stop")
-def percent_at_campus(records, more=1):
+def percent_at_campus(records):
     """Commulative time spent at campus.
 
     NB: Only accepts stop.
@@ -602,11 +645,8 @@ def percent_at_campus(records, more=1):
 
     return counter_campus * 1.0 / counter
 
-    return counter
-
-
 @grouping(interaction="stop")
-def percent_at_home(records, more=1):
+def percent_at_home(records):
     """Commulative time spent at campus.
 
     NB: Only accepts stop.
@@ -620,11 +660,8 @@ def percent_at_home(records, more=1):
 
     return counter_campus * 1.0 / counter
 
-    return counter
-
-
 @grouping(interaction="stop")
-def percent_at_friday_bar(records, more=1):
+def percent_at_friday_bar(records):
     """Commulative time spent at campus.
 
     NB: Only accepts stop.
@@ -638,4 +675,63 @@ def percent_at_friday_bar(records, more=1):
 
     return counter_campus * 1.0 / counter
 
-    return counter
+@grouping(interaction=['physical', 'stop'])
+def percent_contacts_less(records, less=2):
+    """Commulative time spent at campus.
+
+    NB: Only accepts stop.
+    """
+    counter = Counter()
+    for r in records:
+        counter.update(
+            r.correspondent_id if hasattr(r, "correspondent_id") else r.position
+        )
+
+    return len([k for k, v in counter.items() if v <= less]) * 1.0 / len(counter)
+
+@grouping(interaction="screenandtext")
+def first_seen_response_rate(records):
+    """Rate of first seen responses to texts
+    """
+
+    def _first_session_id():
+        return session_id if r.datetime < endtime else session_id + 1
+
+    responses = []
+
+    pending = {}
+    endtime = dt.fromtimestamp(0)
+
+    session_id = -1
+
+    for r in records:
+        if r.interaction == "screen":
+            session_id += 1
+            endtime = r.datetime + datetime.timedelta(0,r.duration)
+        if r.interaction == "text" and r.direction == "in":
+            if r.correspondent_id not in pending:
+                pending[r.correspondent_id] = _first_session_id()
+        if r.interaction == "text" and r.direction == "out":
+            if r.correspondent_id in pending:
+                if pending[r.correspondent_id] == session_id:
+                    responses.append(1)
+                elif pending[r.correspondent_id] < session_id:
+                    responses.append(0)
+                else:
+                    # Interpreter only reaches here if there exists inconsistency
+                    # such as text out not contained in session. Such events are 
+                    # disregarded
+                    pass
+                del pending[r.correspondent_id]
+
+    return np.mean(responses)
+
+
+
+
+
+
+
+
+
+
