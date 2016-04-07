@@ -327,33 +327,43 @@ class User(object):
         empty_box = Colors.OKGREEN + '[ ]' + Colors.ENDC + ' '
         filled_box = Colors.OKGREEN + '[x]' + Colors.ENDC + ' '
 
-        if self.start_time is None:
-            print empty_box + "No records stored"
+        if self.start_time['call'] is None:
+            print empty_box + "No call_records stored"
         else:
-            print (filled_box + format_int("records", len(self.records)) +
-                   " from %s to %s" % (self.start_time, self.end_time))
+            print (filled_box + format_int("call_records", len(self.call_records)) +
+                   " from %s to %s" % (self.start_time['call'], self.end_time['call']))
+        if self.start_time['text'] is None:
+            print empty_box + "No text_records stored"
+        else:
+            print (filled_box + format_int("text_records", len(self.text_records)) +
+                   " from %s to %s" % (self.start_time['text'], self.end_time['text']))
+        if self.start_time['physical'] is None:
+            print empty_box + "No physical_records stored"
+        else:
+            print (filled_box + format_int("physical_records", len(self.physical_records)) +
+                   " from %s to %s" % (self.start_time['physical'], self.end_time['physical']))
+        if self.start_time['screen'] is None:
+            print empty_box + "No screen_records stored"
+        else:
+            print (filled_box + format_int("screen_records", len(self.screen_records)) +
+                   " from %s to %s" % (self.start_time['screen'], self.end_time['screen']))
+        if self.start_time['stop'] is None:
+            print empty_box + "No stop_records stored"
+        else:
+            print (filled_box + format_int("stop_records", len(self.stop_records)) +
+                   " from %s to %s" % (self.start_time['stop'], self.end_time['stop']))
 
-        nb_contacts = bc.individual.number_of_contacts(self, interaction='callandtext', groupby=None)
-        nb_contacts = nb_contacts['allweek']['allday']['callandtext']
+        nb_contacts = bc.individual.number_of_contacts(self, interaction='callandtextandphysical', groupby=None)
+        nb_contacts = nb_contacts['allweek']['allday']['call+text+physical']
         if nb_contacts:
             print filled_box + format_int("contacts", nb_contacts)
         else:
             print empty_box + "No contacts"
 
-        if self.supported_types['attributes']:
+        if self.attributes:
             print filled_box + format_int("attributes", len(self.attributes))
         else:
             print empty_box + "No attribute stored"
-
-        if len(self.stops) == 0:
-            print empty_box + "No stop stored"
-        else:
-            print filled_box + format_int("stops", len(self.stops))
-
-        if self.supported_types['home']:
-            print filled_box + "Has home"
-        else:
-            print empty_box + "No home"
 
         if self.supported_types['text']:
             print filled_box + "Has texts"
@@ -365,7 +375,7 @@ class User(object):
         else:
             print empty_box + "No calls"
 
-        if self.supported_types['network']:
+        if self.network:
             print filled_box + "Has network"
         else:
             print empty_box + "No network"

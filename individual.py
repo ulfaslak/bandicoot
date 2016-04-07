@@ -548,13 +548,13 @@ def balance_of_interactions(records, weighted=False, thresh=1):
 
 @grouping(interaction="physicalandstop")
 def percent_interactions_campus(records):
-    """Percent of interactions outside of campus that are from campus.
+    """Percent of interactions made on campus.
 
     NB: Any interaction type must be used in concatenation with stop
     """
     interactions_place = 0
     interactions = 0
-    endtime = dt.fromtimestamp(0)
+    endtime = datetime.datetime.fromtimestamp(0)
     for r in records:
         if r.interaction == "stop":
             loc = r.event
@@ -563,18 +563,21 @@ def percent_interactions_campus(records):
             if loc == "campus":
                 interactions_place += 1
             interactions += 1
+            
+    if interactions == 0:
+        return None
 
     return interactions_place * 1.0 / interactions
 
 @grouping(interaction="physicalandstop")
 def percent_interactions_home(records):
-    """Percent of interactions outside of campus that are from campus.
+    """Percent of interactions made at home.
 
     NB: Any interaction type must be used in concatenation with stop
     """
     interactions_place = 0
     interactions = 0
-    endtime = dt.fromtimestamp(0)
+    endtime = datetime.datetime.fromtimestamp(0)
     for r in records:
         if r.interaction == "stop":
             loc = r.event
@@ -584,17 +587,20 @@ def percent_interactions_home(records):
                 interactions_place += 1
             interactions += 1
 
+    if interactions == 0:
+        return None
+    
     return interactions_place * 1.0 / interactions
 
 @grouping(interaction="physicalandstop")
 def percent_interactions_other(records):
-    """Percent of interactions outside of campus that are from campus.
+    """Percent of interactions made at 'other'.
 
     NB: Any interaction type must be used in concatenation with stop
     """
     interactions_place = 0
     interactions = 0
-    endtime = dt.fromtimestamp(0)
+    endtime = datetime.datetime.fromtimestamp(0)
     for r in records:
         if r.interaction == "stop":
             loc = r.event
@@ -604,6 +610,9 @@ def percent_interactions_other(records):
                 interactions_place += 1
             interactions += 1
 
+    if interactions == 0:
+        return None
+    
     return interactions_place * 1.0 / interactions
 
 @grouping(interaction="physicalandstop")
@@ -614,7 +623,7 @@ def percent_outside_campus_from_campus(records):
     """
     contacts_campus = set()
     contacts_other = set()
-    endtime = dt.fromtimestamp(0)
+    endtime = datetime.datetime.fromtimestamp(0)
     for r in records:
         if r.interaction == "stop":
             loc = r.event
@@ -626,6 +635,8 @@ def percent_outside_campus_from_campus(records):
                 contacts_other.add(r.correspondent_id)
 
     if len(contacts_other) == 0:
+        if len(contacts_campus) == 0:
+            return None
         return 1.0
 
     return len(contacts_campus & contacts_other) * 1.0 / len(contacts_other)
@@ -642,6 +653,9 @@ def percent_at_campus(records):
         if r.event == "campus":
             counter_campus += r.duration
         counter += r.duration
+        
+    if counter == 0:
+        return None
 
     return counter_campus * 1.0 / counter
 
@@ -657,6 +671,9 @@ def percent_at_home(records):
         if r.event == "home":
             counter_campus += r.duration
         counter += r.duration
+        
+    if counter == 0:
+        return None
 
     return counter_campus * 1.0 / counter
 
@@ -672,35 +689,42 @@ def percent_at_friday_bar(records):
         if r.event == "friday_bar":
             counter_campus += r.duration
         counter += r.duration
+        
+    if counter == 0:
+        return None
 
     return counter_campus * 1.0 / counter
 
-@grouping(interaction=['physical', 'stop'])
-def percent_contacts_less(records, less=2):
-    """Commulative time spent at campus.
+@grouping(interaction=['physical'])
+def percent_contacts_less(records, cutoff=1):
+    """Percent of users contacts that has only been observed in 'cutoff' or less conversations.
 
     NB: Only accepts stop.
     """
-    counter = Counter()
+    interactions = defaultdict(list)
     for r in records:
-        counter.update(
-            r.correspondent_id if hasattr(r, "correspondent_id") else r.position
-        )
+        interactions[r.correspondent_id].append(r)
 
-    return len([k for k, v in counter.items() if v <= less]) * 1.0 / len(counter)
+    interaction_counts = [
+        len(list(_conversations_ext(group))) for group in interactions.values()
+    ]
+    
+    if interaction_counts == 0:
+        return None
+    
+    return sum([1 for c in interaction_counts if c <= cutoff]) * 1.0 / len(interaction_counts)
 
 @grouping(interaction="screenandtext")
 def first_seen_response_rate(records):
     """Rate of first seen responses to texts
     """
-
     def _first_session_id():
         return session_id if r.datetime < endtime else session_id + 1
 
     responses = []
 
     pending = {}
-    endtime = dt.fromtimestamp(0)
+    endtime = datetime.datetime.fromtimestamp(0)
 
     session_id = -1
 

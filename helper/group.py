@@ -13,10 +13,13 @@ DATE_GROUPERS = {
 
 def _groupby_groups(min_, max_, _fun):
         day_each_week = range(0, (max_ - min_).days, 7)
-        return sorted(
-            set([_fun(min_+datetime.timedelta(days=d)) for d in day_each_week]), 
-            key = lambda x: (x[0], x[1])
-        )
+        groups = set([_fun(min_+datetime.timedelta(days=d)) for d in day_each_week])
+        if list(groups)[0] == None:
+            return [None]
+        if len(list(groups)[0]) == 1:
+            return sorted(groups)
+        if len(list(groups)[0]) == 2:
+            return sorted(groups, key=lambda x: (x[0], x[1]))
 
 def _group_date(user, records, _fun):
     for g in _groupby_groups(user.start_time['any'], user.end_time['any'], _fun):
@@ -245,8 +248,9 @@ def grouping(f=None, user_kwd=False, interaction=['call', 'text'], summary='defa
         for (f_w, f_d, i_label, m) in map_filters(interaction, part_of_week, part_of_day):
             if groupby is None:
                 m = m[0] if len(m) != 0 else None
-            if len(m) == 0:
-                continue
+            else:
+                if len(m) == 0:
+                    continue
             returned[f_w][f_d][i_label] = statistics(m, summary=summary, datatype=datatype)
 
         return returned
