@@ -318,7 +318,7 @@ def response_delay(records):
 
     return summary_stats(delays)
 
-@grouping(interaction='callandtext')
+@grouping(interaction=['text', 'call'])
 def percent_initiated_conversations(records):
     """Percentage of conversations that have been initiated by the user.
 
@@ -341,7 +341,7 @@ def percent_initiated_conversations(records):
 
     return summary_stats(all_couples)
 
-@grouping(interaction='callandtext')
+@grouping(interaction=['text', 'call'])
 def percent_concluded_conversations(records):
     """Percentage of conversations that have been concluded by the user.
 
@@ -695,26 +695,39 @@ def percent_at_friday_bar(records):
 
     return counter_campus * 1.0 / counter
 
-@grouping(interaction=['physical'])
+@grouping(interaction=['physical', 'stop'])
 def percent_contacts_less(records, cutoff=1):
     """Percent of users contacts that has only been observed in 'cutoff' or less conversations.
 
     NB: Only accepts stop.
     """
+    records = list(records)
     interactions = defaultdict(list)
-    for r in records:
-        interactions[r.correspondent_id].append(r)
 
-    interaction_counts = [
-        len(list(_conversations_ext(group))) for group in interactions.values()
-    ]
+    if hasattr(records[0], 'correspondent_id'):
+
+        for r in records:
+            interactions[r.correspondent_id].append(r)
+
+        interaction_counts = [
+            len(list(_conversations_ext(group))) for group in interactions.values()
+        ]
+
+    else:
+
+        for r in records:
+            interactions[r.position].append(r)
+            
+        interaction_counts = [
+            len(group) for group in interactions.values()
+        ]
     
     if interaction_counts == 0:
         return None
     
     return sum([1 for c in interaction_counts if c <= cutoff]) * 1.0 / len(interaction_counts)
 
-@grouping(interaction="screenandtext")
+@grouping(interaction=["screen", "text"])
 def first_seen_response_rate(records):
     """Rate of first seen responses to texts
     """
