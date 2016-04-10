@@ -727,7 +727,7 @@ def percent_contacts_less(records, cutoff=1):
     
     return sum([1 for c in interaction_counts if c <= cutoff]) * 1.0 / len(interaction_counts)
 
-@grouping(interaction="screentext")
+@grouping(interaction="screenandtext")
 def first_seen_response_rate(records):
     """Rate of first seen responses to texts
     """
