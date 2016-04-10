@@ -717,7 +717,7 @@ def percent_contacts_less(records, cutoff=1):
 
         for r in records:
             interactions[r.position].append(r)
-            
+
         interaction_counts = [
             len(group) for group in interactions.values()
         ]
@@ -727,7 +727,7 @@ def percent_contacts_less(records, cutoff=1):
     
     return sum([1 for c in interaction_counts if c <= cutoff]) * 1.0 / len(interaction_counts)
 
-@grouping(interaction=["screen", "text"])
+@grouping(interaction="screentext")
 def first_seen_response_rate(records):
     """Rate of first seen responses to texts
     """
