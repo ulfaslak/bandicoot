@@ -401,13 +401,14 @@ def overlap_conversations_per_contacts(records):
 
     return (1 - len(set(timestamps)) / len(timestamps)) / len(interactions)
 
+
 @grouping(interaction='screenandphysical')
-def overlap_screen_physical(records):
+def fraction_social_screen_alone_screen(records):
     """Percent of screen time that overlaps with physical interaction time.
 
     The following illustrates the concept of overlap. '-' denotes active conversation,
     '_' is idle time, and * underscores overlap. Each symbol is 1 minute.
-        
+
         Conversation 1: ___-----______   # Overlap of two conversations. The total 
         Conversation 2: ______--------   # conversation time 11 minutes and overlap
         Conve. overlap:       **         # is 2 minutes: results in 2/11 overlap.
@@ -432,7 +433,7 @@ def overlap_screen_physical(records):
         return to_ts(r.datetime), to_ts(r.datetime) + r.duration
 
     timestamps_screen = [
-        ts 
+        ts
         for r in records if r.interaction == "screen"
         for ts in xrange(*_timespans_screen(r))
     ]
@@ -443,18 +444,20 @@ def overlap_screen_physical(records):
         for a, b in _timespans_physical(i)
         for ts in xrange(a, b)
     ]
-    
+
     if len(timestamps_physical) == 0:
         return None
 
-    timestamps_overlap = set(timestamps_screen) & set(timestamps_physical)
+    overlap_screen_physical = len(set(timestamps_screen) & set(timestamps_physical)) * 1.0 / len(timestamps_physical)
+    overlap_screen_alone = len(set(timestamps_screen) - set(timestamps_physical)) * 1.0 / (max(timestamps_screen) - min(timestamps_screen) - len(timestamps_physical))
 
-    return (1 - len(timestamps_overlap) / len(timestamps_physical)) / len(interactions)
+    return overlap_screen_physical * 1.0 / overlap_screen_alone
+
 
 @grouping(interaction='screen')
 def active_days(records):
     """Number of days during which the user was active. 
-    
+
     A user is considered active if he sends a text, receives a text, initiates 
     a call, receives a call, or has a mobility point.
     """
@@ -487,8 +490,8 @@ def percent_ei_percent_interactions(records, percentage=0.8):
 @grouping(interaction=['call', 'stop'])
 def percent_ei_percent_durations(records, percentage=0.8):
     """Percentage of contacts that account for 80%% of time spent.
-    
-    Optionally takes a percentage argument as a decimal (e.g., .8 for 80%%).  
+
+    Optionally takes a percentage argument as a decimal (e.g., .8 for 80%%).
     """
 
     records = list(records)
