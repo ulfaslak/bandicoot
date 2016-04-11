@@ -118,7 +118,7 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
         (bc.individual.response_rate, summary_type),
         (bc.individual.percent_nocturnal, scalar_type),
         (bc.individual.interevent_time, scalar_type),
-        (bc.individual.overlap_screen_physical, scalar_type),
+        (bc.individual.fraction_social_screen_alone_screen, scalar_type),
         (bc.individual.percent_interactions_campus, scalar_type),
         (bc.individual.percent_interactions_home, scalar_type),
         (bc.individual.percent_interactions_other, scalar_type),
