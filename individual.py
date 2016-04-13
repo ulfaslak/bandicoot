@@ -20,7 +20,7 @@ def interevent_time(records):
 
     return np.mean(inter)
 
-@grouping(interaction=["call", "text", "physical", "stop"])
+@grouping(interaction=[["call", "text", "physical"], "stop"])
 def number_of_contacts(records, direction=None, more=1):
     """Number of contacts the user interacted with.
 
@@ -47,7 +47,7 @@ def number_of_contacts(records, direction=None, more=1):
 
     return sum(1 for d in counter.values() if d > more)
 
-@grouping(interaction=["call", "text", "physical", 'stop'])
+@grouping(interaction=[["call", "text"], "physical", 'stop'])
 def number_of_interactions(records, direction=None):
     """Total number of interactions.
 
@@ -341,7 +341,7 @@ def percent_initiated_conversations(records):
 
     return summary_stats(all_couples)
 
-@grouping(interaction=['text', 'call'])
+@grouping(interaction=['text'])
 def percent_concluded_conversations(records):
     """Percentage of conversations that have been concluded by the user.
 
@@ -516,7 +516,7 @@ def percent_ei_percent_durations(records, percentage=0.8):
 
     return (len(user_count) - len(user_sort)) / len(records)
 
-@grouping(interaction=["call", "text"])
+@grouping(interaction=["text"])
 def balance_of_interactions(records, weighted=False, thresh=1):
     """Balance of out/(in+out) interactions.
 
@@ -766,10 +766,22 @@ def first_seen_response_rate(records):
 
     return np.mean(responses)
 
+@grouping(interaction=[["call", "text"]])
+def balance_call_text(records, direction=None):
+    """Fraction between number of calls and number of texts.
 
-
-
-
+    Parameters
+    ----------
+    direction : str, optional
+        Filters the records by their direction: ``None`` for all records,
+        ``'in'`` for incoming, and ``'out'`` for outgoing.
+    """
+    if direction is None:
+        return len([r for r in records if r.interaction == "call"]) * 1.0 / \
+               len([r for r in records if r.interaction == "text"])
+    else:
+        return len([r for r in records if r.direction == direction and r.interaction == "call"]) * 1.0 / \
+               len([r for r in records if r.direction == direction and r.interaction == "text"])
 
 
 
