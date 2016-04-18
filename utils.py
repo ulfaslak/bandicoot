@@ -103,29 +103,29 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
 
     individual_functions = [
         #(bc.individual.active_days, scalar_type),
-        (bc.individual.number_of_contacts, scalar_type),  # √
-        (bc.individual.number_of_interactions, scalar_type),  # √
+        (bc.individual.number_of_contacts, scalar_type),  # v
+        (bc.individual.number_of_interactions, scalar_type),  # v
         #(bc.individual.entropy, scalar_type),  # x
         #(bc.individual.interactions_per_contact, scalar_type),  # x
-        (bc.individual.percent_ei_percent_interactions, scalar_type),  # √
-        (bc.individual.percent_ei_percent_durations, scalar_type),  # √
-        (bc.individual.balance_of_interactions, scalar_type),  # √
-        (bc.individual.duration, scalar_type),  # √
-        (bc.individual.percent_initiated_conversations, summary_type),  # √
-        (bc.individual.percent_concluded_conversations, summary_type),  # √
-        #(bc.individual.overlap_conversations_per_contacts, scalar_type),  # x
-        (bc.individual.response_delay, summary_type),  # √
-        (bc.individual.response_rate, summary_type),  # √
-        (bc.individual.percent_nocturnal, scalar_type),  # √
-        (bc.individual.interevent_time, scalar_type),  # √
-        (bc.individual.ratio_social_screen_alone_screen, scalar_type),  # √
-        (bc.individual.ratio_interactions_campus_other, scalar_type),  # √
-        (bc.individual.percent_outside_campus_from_campus, scalar_type),  # √
-        (bc.individual.percent_at_campus, scalar_type),  # √
-        (bc.individual.percent_contacts_less, scalar_type),  # √
-        (bc.individual.first_seen_response_rate, scalar_type),  # √
-        (bc.individual.ratio_call_text, scalar_type),  # √
-        (bc.individual.interaction_autocorrelation, scalar_type)  # √
+        #(bc.individual.percent_ei_percent_interactions, scalar_type),  # v
+        (bc.individual.percent_ei_percent_durations, scalar_type),  # v
+        (bc.individual.balance_of_interactions, scalar_type),  # v
+        (bc.individual.duration, scalar_type),  # v
+        (bc.individual.percent_initiated_conversations, summary_type),  # v
+        (bc.individual.percent_concluded_conversations, summary_type),  # v
+        (bc.individual.overlap_conversations, scalar_type),  # v
+        (bc.individual.response_delay, summary_type),  # v
+        (bc.individual.response_rate, summary_type),  # v
+        (bc.individual.percent_nocturnal, scalar_type),  # v
+        (bc.individual.interevent_time, scalar_type),  # v
+        (bc.individual.ratio_social_screen_alone_screen, scalar_type),  # v
+        (bc.individual.ratio_interactions_campus_other, scalar_type),  # v
+        (bc.individual.percent_outside_campus_from_campus, scalar_type),  # v
+        (bc.individual.percent_at_campus, scalar_type),  # v
+        (bc.individual.number_of_contacts_less, scalar_type),  # v
+        (bc.individual.first_seen_response_rate, scalar_type),  # v
+        (bc.individual.ratio_call_text, scalar_type),  # v
+        (bc.individual.interaction_autocorrelation, scalar_type)  # v
     ]
 
     spatial_functions = [

@@ -35,6 +35,16 @@ def _conversations(group, delta=datetime.timedelta(hours=1)):
 
     if len(results) != 0:
         yield results
+        
+def _interaction_grouper(records, dtype=None):
+    interactions = defaultdict(list)
+    if dtype != "stop":
+        for r in records:
+            interactions[r.correspondent_id].append(r)
+    else:
+        for r in records:
+            interactions[r.position].append(r)
+    return interactions
 
 @grouping(interaction='screen')
 def active_days(records):
@@ -47,7 +57,7 @@ def active_days(records):
     days = set(r.datetime.date() for r in records)
     return len(days)
 
-@grouping(interaction=[["call", "text"], "stop"])
+@grouping(interaction=[["text", "call"], "stop"])
 def number_of_contacts(records, direction=None, more=1):
     """Number of contacts the user interacted with.
 
@@ -74,9 +84,13 @@ def number_of_contacts(records, direction=None, more=1):
 
     return sum(1 for d in counter.values() if d > more)
 
-@grouping(interaction=[["call", "text"], "physical", 'stop'])
-def number_of_interactions(records, direction=None):
+@grouping(interaction=[["text", "call"], "physical", 'stop'])
+def number_of_interactions(records, direction=None, perday=True):
     """Total number of interactions.
+    
+    4.428 is an empiral constant equal to number of texts / number of calls
+    in the whole dataset. It is introduced to make calls and texts count
+    in equal measure.
 
     Parameters
     ----------
@@ -85,11 +99,18 @@ def number_of_interactions(records, direction=None):
         ``'in'`` for incoming, and ``'out'`` for outgoing.
     """
     if direction is None:
-        return len([r for r in records])
+        n_o_interactions = sum([4.428 if r.interaction == 'call' else 1 for r in records])
     else:
-        return len([r for r in records if r.direction == direction])
+        n_o_interactions = sum([4.428 if r.interaction == 'call' else 1 for r in records if r.direction == direction])
+    
+    if perday:
+        norm = len(set(r.datetime.date() for r in records))
+    else:
+        norm = 1
+        
+    return n_o_interactions * 1.0 / norm
 
-@grouping(interaction=["call", "text", "physical", "stop"])
+@grouping(interaction=["text", "call", "physical", "stop"])
 def entropy(records, normalize=False):
     """Entropy of the user's contacts. Time uncorrelated.
 
@@ -110,7 +131,7 @@ def entropy(records, normalize=False):
     else:
         return raw_entropy
 
-@grouping(interaction=["call", "text", "physical", "stop"])
+@grouping(interaction=["text", "call", "physical", "stop"])
 def interactions_per_contact(records):
     """Number of interactions a user had with each of its contacts.
 
@@ -142,23 +163,20 @@ def percent_ei_percent_interactions(records, percentage=0.8):
         return None
 
     if set(r.interaction for r in records) == {'text', 'call'}:
-        interactions_text = defaultdict(list)
-        interactions_call = defaultdict(list)
-        for r in records:
-            if r.interaction == "text":
-                interactions_text[r.correspondent_id].append(r)
-            else:
-                interactions_call[r.correspondent_id].append(r)
-        
+        interactions_text = _interaction_grouper(filter(lambda r: r.interaction == "text", records))
+        interactions_call = _interaction_grouper(filter(lambda r: r.interaction == "call", records))
+
         sum_interactions_text = len([r for group in interactions_text.values() for r in group])
         sum_interactions_call = sum([r.duration for group in interactions_call.values() for r in group])
-        
+
         user_count = defaultdict(int)
         for user, group in interactions_text.items():
             user_count[user] += len(group) * 1.0 / sum_interactions_text
         for user, group in interactions_call.items():
             user_count[user] += sum([r.duration for r in group]) * 1.0 / sum_interactions_call
-            
+
+    elif records[0].interaction == "physical":
+        user_count = Counter(r.correspondent_id for r in records)
     else:
         user_count = Counter(r.position for r in records)
 
@@ -228,7 +246,7 @@ def balance_of_interactions(records, weighted=False, thresh=1):
 
     return counter_out * 1.0 / counter
 
-@grouping(interaction=['call', 'text', 'physical', 'screen', 'stop'])
+@grouping(interaction=['text', 'call', 'physical', 'screen', 'stop'])
 def duration(records, direction=None):  # Consider removing direction argument
     """Duration of the user's sessions, grouped on correspondent_id/position.
 
@@ -257,10 +275,7 @@ def duration(records, direction=None):  # Consider removing direction argument
     records = list(records)
 
     if style[records[0].interaction] == 'conversation':
-        interactions = defaultdict(list)
-        for r in records:
-            interactions[r.correspondent_id].append(r)
-
+        interactions = _interaction_grouper(records)
         durations = [
             _conversation_mean_duration(group)
             for group in interactions.values()
@@ -280,10 +295,7 @@ def percent_initiated_conversations(records):
     See :ref:`Using bandicoot <conversations-label>` for a definition of conversations.
     """
     records = list(records)
-
-    interactions = defaultdict(list)
-    for r in records:
-        interactions[r.correspondent_id].append(r)
+    interactions = _interaction_grouper(records)
 
     def _percent_initiated(grouped):
         mapped = [(1 if conv[0].direction == 'out' else 0, 1)
@@ -303,10 +315,7 @@ def percent_concluded_conversations(records):
     #See :ref:`Using bandicoot <conversations-label>` for a definition of conversations.
     """
     records = list(records)
-
-    interactions = defaultdict(list)
-    for r in records:
-        interactions[r.correspondent_id].append(r)
+    interactions = _interaction_grouper(records)
 
     def _percent_initiated(grouped):
         mapped = [(1 if conv[-1].direction == 'out' else 0, 1)
@@ -317,8 +326,8 @@ def percent_concluded_conversations(records):
 
     return summary_stats(all_couples)
 
-@grouping(interaction=['text', 'physical'])
-def overlap_conversations_per_contacts(records):
+@grouping(interaction=['physical'])
+def overlap_conversations(records):
     """Percent of conversation time that overlaps with other conversations.
 
     The following illustrates the concept of overlap. '-' denotes active conversation,
@@ -331,28 +340,25 @@ def overlap_conversations_per_contacts(records):
     #See :ref:`Using bandicoot <conversations-label>` for a definition of conversations.
     """
     records = list(records)
-
-    interactions = defaultdict(list)
-    for r in records:
-        interactions[r.correspondent_id].append(r)
+    interactions = _interaction_grouper(records)
 
     def _timespans(grouped):
         to_ts = lambda dt: int(dt.strftime("%s"))
         ts = [(to_ts(conv[0].datetime), to_ts(conv[-1].datetime))
-              for conv in _conversations(grouped)]
+              for conv in _conversations(grouped, delta=datetime.timedelta(hours=0.5))]
         return ts
 
     timestamps = [
         ts 
-        for i in interactions.values()
-        for a,b in _timespans(i) 
+        for g in interactions.values()
+        for a, b in _timespans(g) 
         for ts in xrange(a,b)
     ]
     
     if len(timestamps) == 0:
         return None
-
-    return (1 - len(set(timestamps)) / len(timestamps)) / len(interactions)
+    
+    return (1 - len(set(timestamps)) / len(timestamps))
 
 @grouping(interaction=['text', 'call'])
 def response_delay(records):
@@ -378,10 +384,7 @@ def response_delay(records):
     """
 
     records = list(records)
-
-    interactions = defaultdict(list)
-    for r in records:
-        interactions[r.correspondent_id].append(r)
+    interactions = _interaction_grouper(records)
 
     def _mean_response_delay(grouped):
         ts = ((b.datetime - a.datetime).total_seconds()
@@ -417,10 +420,7 @@ def response_rate(records):
     See :ref:`Using bandicoot <conversations-label>` for a definition of conversations.
     """
     records = list(records)
-
-    interactions = defaultdict(list)
-    for r in records:
-        interactions[r.correspondent_id].append(r)
+    interactions = _interaction_grouper(records)
 
     def _response_rate(grouped):
         received, responded = 0, 0
@@ -451,7 +451,7 @@ def percent_nocturnal(records, user):
     """Percentage of activity at night.
 
     By default, nights are 7pm-7am. Nightimes can be set in
-    ``User.night_start`` and ``User.night_end``.
+    ``user.night_start`` and ``user.night_end``.
     """
     records = list(records)
 
@@ -493,20 +493,16 @@ def ratio_social_screen_alone_screen(records):
     #See :ref:`Using bandicoot <conversations-label>` for a definition of conversations.
     """
     records = list(records)
+    interactions = _interaction_grouper(filter(lambda r: r.interaction == "physical", records))
 
-    interactions = defaultdict(list)
-    for r in records:
-        if r.interaction == "physical":
-            interactions[r.correspondent_id].append(r)
-
+    to_ts = lambda dt: int(dt.strftime("%s"))
+    
     def _timespans_physical(grouped):
-        to_ts = lambda dt: int(dt.strftime("%s"))
         ts = [(to_ts(conv[0].datetime), to_ts(conv[-1].datetime))
               for conv in _conversations(grouped, datetime.timedelta(hours=1.0/12))]
         return ts
 
     def _timespans_screen(r):
-        to_ts = lambda dt: int(dt.strftime("%s"))
         return to_ts(r.datetime), to_ts(r.datetime) + r.duration
 
     timestamps_screen = [
@@ -552,7 +548,7 @@ def ratio_interactions_campus_other(records):
     if 0 in [interactions_campus, interactions_other]:
         return None
 
-    return interactions_campus * 1.0 / interactions_other
+    return interactions_campus * 1.0 / (interactions_other + interactions_campus)
 
 @grouping(interaction=[['physical', 'stop']])
 def percent_outside_campus_from_campus(records):
@@ -581,55 +577,50 @@ def percent_outside_campus_from_campus(records):
     return len(contacts_campus & contacts_other) * 1.0 / len(contacts_other)
 
 @grouping(interaction="stop")
-def percent_at_campus(records):
+def percent_at_campus(records, perday=True):
     """Commulative time spent at campus.
 
     NB: Only accepts stop.
     """
     counter_campus = 0
-    counter = 0
     for r in records:
         if r.event == "campus":
             counter_campus += r.duration
-        counter += r.duration
-        
-    if counter == 0:
-        return None
+            
+    if perday:
+        norm = len(set(r.datetime.date() for r in records)) * 86400 * 5/7
+    else:
+        norm = 1
 
-    return counter_campus * 1.0 / counter
+    return counter_campus * 1.0 / norm
 
 @grouping(interaction=['physical', 'stop'])
-def percent_contacts_less(records, cutoff=1):
-    """Percent of users contacts that has only been observed in 'cutoff' or less conversations.
+def number_of_contacts_less(records, cutoff=1, perday=True):
+    """Number of users contacts that has only been observed in 'cutoff' or less conversations.
 
     NB: Only accepts stop.
     """
     records = list(records)
-    interactions = defaultdict(list)
+    interactions = _interaction_grouper(records, dtype=records[0].interaction)
 
-    if hasattr(records[0], 'correspondent_id'):
-
-        for r in records:
-            interactions[r.correspondent_id].append(r)
-
+    if records[0].interaction == 'correspondent_id':
         interaction_counts = [
-            len(list(_conversations(group, delta=datetime.timedelta(hours=24)))) 
-            for group in interactions.values()
+            len(list(_conversations(group, delta=datetime.timedelta(hours=24)))) for group in interactions.values()
         ]
-
     else:
-
-        for r in records:
-            interactions[r.position].append(r)
-
         interaction_counts = [
             len(group) for group in interactions.values()
         ]
-    
+
     if interaction_counts == 0:
         return None
     
-    return sum([1 for c in interaction_counts if c <= cutoff]) * 1.0 / len(interaction_counts)
+    if perday:
+        norm = len(set(r.datetime.date() for r in records))
+    else:
+        norm = 1
+    
+    return sum([1 for c in interaction_counts if c <= cutoff]) * 1.0 / norm
 
 @grouping(interaction=[['text', 'screen']])
 def first_seen_response_rate(records):
@@ -667,7 +658,7 @@ def first_seen_response_rate(records):
 
     return np.mean(responses)
 
-@grouping(interaction=[["call", "text"]])
+@grouping(interaction=[["text", "call"]])
 def ratio_call_text(records, direction=None):
     """Fraction between number of calls and number of texts.
 
@@ -698,7 +689,7 @@ def interaction_autocorrelation(records, more=5):
     """
     def _autocor(conv_ts):
         wo = 60*60*24*7  # Week offset in seconds
-        _floor = lambda x: x / 300 * 300
+        _floor = lambda x: x // 300 * 300
 
         x1 = set(_floor(ts) for c in conv_ts for ts in range(c[0], c[-1]+301, 300))
         x2 = set(x + wo for x in x1)
@@ -718,9 +709,7 @@ def interaction_autocorrelation(records, more=5):
             for conv in conversations
         ]
 
-    interactions = defaultdict(list)
-    for r in records:
-        interactions[r.correspondent_id].append(r)
+    interactions = _interaction_grouper(records)
     
     interaction_conversations = [
         _conversation_intervals(group) for group in interactions.values()
