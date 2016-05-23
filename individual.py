@@ -97,6 +97,9 @@ def number_of_interactions(records, direction=None, perday=True):
     direction : str, optional
         Filters the records by their direction: ``None`` for all records,
         ``'in'`` for incoming, and ``'out'`` for outgoing.
+    perday : bool
+        If True computes interactions per day, if false computes total number
+        of interactions.
     """
     if direction is None:
         n_o_interactions = sum([4.428 if r.interaction == 'call' else 1 for r in records])
@@ -581,6 +584,10 @@ def percent_at_campus(records, perday=True):
     """Commulative time spent at campus.
 
     NB: Only accepts stop.
+    
+    perday : bool
+        If True computes interactions per day, if false computes total number
+        of interactions.
     """
     counter_campus = 0
     for r in records:
@@ -599,6 +606,10 @@ def number_of_contacts_less(records, cutoff=1, perday=True):
     """Number of users contacts that has only been observed in 'cutoff' or less conversations.
 
     NB: Only accepts stop.
+    
+    perday : bool
+        If True computes interactions per day, if false computes total number
+        of interactions.
     """
     records = list(records)
     interactions = _interaction_grouper(records, dtype=records[0].interaction)
