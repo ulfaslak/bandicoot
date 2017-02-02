@@ -132,8 +132,7 @@ def entropy(records, normalize=True):
     except AttributeError:
         counter = Counter(r.position for r in records)
 
-    print records[0]
-    raw_entropy = entropy(counter.values())
+    raw_entropy = 1# entropy(counter.values())
     n = len(counter)
     if normalize and n > 1:
         return raw_entropy / np.log2(n)
