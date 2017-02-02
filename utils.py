@@ -121,7 +121,7 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
         (bc.individual.ratio_social_screen_alone_screen, scalar_type),  # v
         (bc.individual.ratio_interactions_campus_other, scalar_type),  # v
         (bc.individual.percent_outside_campus_from_campus, scalar_type),  # v
-        (bc.individual.percent_at_campus, scalar_type),  # v
+        (bc.individual.time_at_campus, scalar_type),  # v
         (bc.individual.number_of_contacts_less, scalar_type),  # v
         (bc.individual.first_seen_response_rate, scalar_type),  # v
         (bc.individual.ratio_call_text, scalar_type),  # v

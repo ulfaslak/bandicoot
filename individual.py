@@ -58,7 +58,7 @@ def active_days(records):
     return len(days)
 
 @grouping(interaction=[["text", "call"], "stop"])
-def number_of_contacts(records, direction=None, more=1, perday=True):
+def number_of_contacts(records, direction=None, more=1, perday=False):
     """Number of contacts the user interacted with.
 
     Parameters
@@ -70,7 +70,7 @@ def number_of_contacts(records, direction=None, more=1, perday=True):
         Counts only contacts with more than this number of interactions. Defaults to 0.
     """
     records = list(records)
-    
+
     if hasattr(records[0], 'correspondent_id'):
         counter = Counter(
             r.correspondent_id for r in records
@@ -90,7 +90,7 @@ def number_of_contacts(records, direction=None, more=1, perday=True):
     return sum(1 for d in counter.values() if d > more) / norm
 
 @grouping(interaction=[["text", "call"], "physical", 'stop'])
-def number_of_interactions(records, direction=None, perday=True):
+def number_of_interactions(records, direction=None, perday=False):
     """Total number of interactions.
     
     4.428 is an empiral constant equal to number of texts / number of calls
@@ -585,7 +585,7 @@ def percent_outside_campus_from_campus(records):
     return len(contacts_campus & contacts_other) * 1.0 / len(contacts_other)
 
 @grouping(interaction="stop")
-def percent_at_campus(records, perday=True):
+def time_at_campus(records, perday=False):
     """Commulative time spent at campus.
 
     NB: Only accepts stop.
@@ -607,7 +607,7 @@ def percent_at_campus(records, perday=True):
     return counter_campus * 1.0 / norm
 
 @grouping(interaction=['physical', 'stop'])
-def number_of_contacts_less(records, cutoff=1, perday=True):
+def number_of_contacts_less(records, cutoff=1, perday=False):
     """Number of users contacts that has only been observed in 'cutoff' or less conversations.
 
     NB: Only accepts stop.
