@@ -119,7 +119,7 @@ def number_of_interactions(records, direction=None, perday=False):
     return n_o_interactions * 1.0 / norm
 
 @grouping(interaction=["text", "call", "physical", "stop"])
-def entropy(records, normalize=True):
+def entropy(records, normalize=False):
     """Entropy of the user's contacts. Time uncorrelated.
 
     Parameters
@@ -132,7 +132,7 @@ def entropy(records, normalize=True):
     except AttributeError:
         counter = Counter(r.position for r in records)
 
-    raw_entropy = 1# entropy(counter.values())
+    raw_entropy = entropy(counter.values())
     n = len(counter)
     if normalize and n > 1:
         return raw_entropy / np.log2(n)
@@ -149,7 +149,7 @@ def interactions_per_contact(records):
         Filters the records by their direction: ``None`` for all records,
         ``'in'`` for incoming, and ``'out'`` for outgoing.
     """
-
+    
     try:
         contacts = [r.correspondent_id for r in records]
     except AttributeError:
@@ -160,7 +160,7 @@ def interactions_per_contact(records):
 @grouping(interaction=[['text', 'call'], 'physical'])
 def percent_ei_percent_interactions(records, percentage=0.8):
     """Percentage of contacts that account for 80%% of interactions.
-
+    
     If interaction is ['text', 'call'] normalize text interactions per correspondent
     with total number of texts and summed call duration per correspondent with total
     duration of calling, then combine those two measures and use that for user_count.
