@@ -119,7 +119,7 @@ def number_of_interactions(records, direction=None, perday=False):
     return n_o_interactions * 1.0 / norm
 
 @grouping(interaction=["text", "call", "physical", "stop"])
-def entropy(records, normalize=False):
+def entropy(records, normalize=True):
     """Entropy of the user's contacts. Time uncorrelated.
 
     Parameters
