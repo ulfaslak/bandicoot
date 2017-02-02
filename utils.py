@@ -105,10 +105,10 @@ def all(user, groupby='week', summary='default', dist=False, network=False, spat
         #(bc.individual.active_days, scalar_type),
         (bc.individual.number_of_contacts, scalar_type),  # v
         (bc.individual.number_of_interactions, scalar_type),  # v
-        (bc.individual.entropy, scalar_type),  # v
+        #(bc.individual.entropy, scalar_type),  # v
         #(bc.individual.interactions_per_contact, scalar_type),  # x
         #(bc.individual.percent_ei_percent_interactions, scalar_type),  # v
-        #(bc.individual.percent_ei_percent_durations, scalar_type),  # v
+        (bc.individual.percent_ei_percent_durations, scalar_type),  # v
         (bc.individual.balance_of_interactions, scalar_type),  # v
         (bc.individual.duration, scalar_type),  # v
         (bc.individual.percent_initiated_conversations, summary_type),  # v
