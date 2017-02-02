@@ -58,7 +58,7 @@ def active_days(records):
     return len(days)
 
 @grouping(interaction=[["text", "call"], "stop"])
-def number_of_contacts(records, direction=None, more=1):
+def number_of_contacts(records, direction=None, more=1, perday=True):
     """Number of contacts the user interacted with.
 
     Parameters
@@ -82,7 +82,12 @@ def number_of_contacts(records, direction=None, more=1):
             r.position for r in records 
         )
 
-    return sum(1 for d in counter.values() if d > more)
+    if perday:
+        norm = len(set(r.datetime.date() for r in records))
+    else:
+        norm = 1
+
+    return sum(1 for d in counter.values() if d > more) / norm
 
 @grouping(interaction=[["text", "call"], "physical", 'stop'])
 def number_of_interactions(records, direction=None, perday=True):
